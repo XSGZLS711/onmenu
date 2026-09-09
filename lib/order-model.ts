@@ -93,6 +93,7 @@ export type Cart = {
   version: number;
   lines: CartLine[];
   pendingId: string | null;
+  guestIds?: string[];
 };
 export type Order = {
   id: string;
@@ -110,6 +111,9 @@ export type Order = {
   received?: number;
   change?: number;
   copies: number;
+  paymentPreference?: 'cash' | 'mpaisa';
+  guestIds?: string[];
+  refundAcknowledgedAt?: string;
   refund?: {
     reason: string;
     status: 'requested' | 'approved' | 'declined';
@@ -122,6 +126,7 @@ export type Audit = {
   action: string;
   orderId?: string;
   detail?: string;
+  actor?: string;
 };
 export type DemoState = {
   carts: Record<string, Cart>;
@@ -151,6 +156,9 @@ export type Command = {
   received?: number;
   reason?: string;
   approve?: boolean;
+  guestId?: string;
+  actor?: string;
+  paymentPreference?: 'cash' | 'mpaisa';
 };
 export class RuleError extends Error {
   code: string;
@@ -211,8 +219,41 @@ export function applyCommand(
   if (previous.processed.includes(cmd.id)) return previous;
   const s: DemoState = structuredClone(previous);
   const audit = (action: string, orderId?: string, detail?: string) =>
-    s.audit.push({ at, role: cmd.role, action, orderId, detail });
-  if (['add', 'adjust', 'submit'].includes(cmd.type)) {
+    s.audit.push({
+      at,
+      role: cmd.role,
+      action,
+      orderId,
+      detail,
+      actor: cmd.actor,
+    });
+  if (cmd.type === 'join') {
+    requireRule(
+      cmd.role === 'guest' &&
+        typeof cmd.table === 'string' &&
+        TABLES.includes(cmd.table as (typeof TABLES)[number]),
+      'ROLE',
+    );
+    requireRule(
+      typeof cmd.guestId === 'string' && /^[0-9a-f-]{36}$/i.test(cmd.guestId),
+      'INVALID',
+    );
+    const cart = s.carts[cmd.table];
+    cart.guestIds ??= [];
+    const order = s.orders.find((o) => o.id === cart.pendingId);
+    if (
+      cart.guestIds.includes(cmd.guestId) &&
+      (!order || order.guestIds?.includes(cmd.guestId))
+    )
+      return previous;
+    requireRule(cart.guestIds.length < 100, 'QUANTITY');
+    if (!cart.guestIds.includes(cmd.guestId)) cart.guestIds.push(cmd.guestId);
+    if (order) {
+      order.guestIds ??= [];
+      if (!order.guestIds.includes(cmd.guestId))
+        order.guestIds.push(cmd.guestId);
+    }
+  } else if (['add', 'adjust', 'submit'].includes(cmd.type)) {
     requireRule(cmd.role === 'guest' || cmd.role === 'cashier', 'ROLE');
     requireRule(
       typeof cmd.table === 'string' &&
@@ -222,6 +263,10 @@ export function applyCommand(
     const c = s.carts[cmd.table];
     requireRule(cmd.round === c.round, 'ROUND_CHANGED');
     requireRule(!c.pendingId, 'CART_LOCKED');
+    if (cmd.role === 'guest' && cmd.guestId) {
+      c.guestIds ??= [];
+      if (!c.guestIds.includes(cmd.guestId)) c.guestIds.push(cmd.guestId);
+    }
     if (cmd.type === 'add') {
       const item = getItem(cmd.itemId ?? '');
       requireRule(item, 'INVALID');
@@ -262,6 +307,11 @@ export function applyCommand(
       requireRule(cmd.cartVersion === c.version, 'CART_CHANGED');
       requireRule(c.lines.length, 'EMPTY');
       requireRule(s.orders.length < 200, 'DEMO_FULL');
+      requireRule(
+        !cmd.paymentPreference ||
+          ['cash', 'mpaisa'].includes(cmd.paymentPreference),
+        'INVALID',
+      );
       const order: Order = {
         id: cmd.id,
         number: s.nextNumber++,
@@ -273,6 +323,8 @@ export function applyCommand(
         source: cmd.role,
         createdAt: at,
         copies: 0,
+        paymentPreference: cmd.paymentPreference ?? 'cash',
+        guestIds: [...(c.guestIds ?? [])],
       };
       s.orders.unshift(order);
       c.pendingId = order.id;
@@ -332,6 +384,14 @@ export function applyCommand(
       );
       order.status = cmd.type === 'prepare' ? 'preparing' : 'ready';
       audit(cmd.type, order.id);
+    } else if (cmd.type === 'acknowledge_refund') {
+      requireRule(cmd.role === 'kitchen', 'ROLE');
+      requireRule(
+        order.status === 'refunded' && !order.refundAcknowledgedAt,
+        'ALREADY_HANDLED',
+      );
+      order.refundAcknowledgedAt = at;
+      audit('refund_acknowledged', order.id);
     } else if (cmd.type === 'reprint') {
       requireRule(cmd.role === 'cashier' || cmd.role === 'kitchen', 'ROLE');
       requireRule(

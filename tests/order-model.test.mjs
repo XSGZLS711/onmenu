@@ -222,3 +222,67 @@ test('preparation and reprints preserve original order number and amounts', () =
   assert.equal(s.orders[0].copies, 2);
   assert.equal(s.orders[0].total, 3600);
 });
+
+test('guest participants follow their paid order; new arrivals cannot see earlier diners', () => {
+  const a = randomUUID(),
+    b = randomUUID(),
+    c = randomUUID();
+  let s = applyCommand(emptyState(), cmd('join', { guestId: a }));
+  s = applyCommand(s, cmd('add', { itemId: 'dumplings', guestId: a }));
+  s = applyCommand(
+    s,
+    cmd('submit', { cartVersion: 1, guestId: a, paymentPreference: 'mpaisa' }),
+  );
+  const id = s.orders[0].id;
+  s = applyCommand(s, cmd('join', { guestId: b }));
+  assert.ok(s.orders[0].guestIds.includes(b));
+  s = applyCommand(
+    s,
+    cmd('pay', {
+      role: 'cashier',
+      orderId: id,
+      method: 'mpaisa',
+      reference: 'GUEST-123',
+    }),
+  );
+  s = applyCommand(s, cmd('join', { guestId: c }));
+  assert.equal(s.orders[0].paymentPreference, 'mpaisa');
+  assert.ok(!s.orders[0].guestIds.includes(c));
+  assert.deepEqual(s.carts['01'].guestIds, [c]);
+});
+test('a refunded kitchen order requires an explicit stop acknowledgement', () => {
+  let s = checkout(),
+    id = s.orders[0].id;
+  s = applyCommand(
+    s,
+    cmd('pay', {
+      role: 'cashier',
+      orderId: id,
+      method: 'cash',
+      received: 3600,
+    }),
+  );
+  s = applyCommand(s, cmd('prepare', { role: 'kitchen', orderId: id }));
+  s = applyCommand(
+    s,
+    cmd('request_refund', {
+      role: 'cashier',
+      orderId: id,
+      reason: 'Customer cancelled',
+    }),
+  );
+  s = applyCommand(
+    s,
+    cmd('review_refund', { role: 'manager', orderId: id, approve: true }),
+  );
+  assert.throws(
+    () => applyCommand(s, cmd('ready', { role: 'kitchen', orderId: id })),
+    /ALREADY_HANDLED/,
+  );
+  s = applyCommand(
+    s,
+    cmd('acknowledge_refund', { role: 'kitchen', orderId: id }),
+  );
+  assert.ok(s.orders[0].refundAcknowledgedAt);
+  assert.equal(s.audit.at(-1).action, 'refund_acknowledged');
+});

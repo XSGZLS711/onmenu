@@ -39,3 +39,4 @@ next-env.d.ts
 
 # TypeScript build cache
 *.tsbuildinfo
+!.env.example
