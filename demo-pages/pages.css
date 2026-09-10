@@ -1,0 +1,65 @@
+.demo-navigation {
+  background: #fff;
+  border-bottom: 1px solid #dfe5df;
+  padding: 12px max(18px, calc((100vw - 1440px) / 2));
+}
+.demo-nav-row {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.demo-nav-row strong {
+  font-size: 15px;
+}
+.demo-nav-row small {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+}
+.demo-nav-row nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.demo-nav-row nav a {
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.demo-nav-row nav a[aria-current] {
+  background: #243c31;
+  color: #fff;
+}
+.demo-nav-row nav a:hover {
+  background: #eaf0eb;
+  color: #23342d;
+}
+.demo-nav-row .new-demo {
+  margin-left: auto;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.demo-navigation p {
+  font-size: 13px;
+  margin-top: 9px;
+  color: #5c6861;
+}
+.demo-navigation p span {
+  display: block;
+}
+@media (max-width: 620px) {
+  .demo-nav-row {
+    gap: 8px;
+  }
+  .demo-nav-row strong {
+    width: 100%;
+  }
+  .demo-nav-row nav {
+    flex: 1;
+  }
+  .demo-nav-row nav a {
+    padding: 6px 10px;
+  }
+}

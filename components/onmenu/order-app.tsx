@@ -155,6 +155,12 @@ const time = (value: string) =>
     minute: '2-digit',
   });
 const newId = () => crypto.randomUUID();
+const unchangedPath = (path: string) => path;
+export type DemoClient = {
+  request: (url: string, init?: RequestInit) => Promise<Response>;
+  href: (path: string) => string;
+  asset: (path: string) => string;
+};
 type Modal =
   | { type: 'food'; item: MenuItem }
   | { type: 'share' }
@@ -169,12 +175,17 @@ export default function OrderApp({
   scope,
   tableLinks = {},
   staffRoles = [],
+  demoClient,
 }: {
   role: Role;
   scope: TableScope;
   tableLinks?: Record<string, string>;
   staffRoles?: StaffRole[];
+  demoClient?: DemoClient;
 }) {
+  const localDemo = !!demoClient;
+  const href = demoClient?.href ?? unchangedPath;
+  const asset = demoClient?.asset ?? unchangedPath;
   const room = scope.room;
   const endpoint =
     role === 'guest'
@@ -238,10 +249,13 @@ export default function OrderApp({
   const refresh = useCallback(async () => {
     if (!ctx.current.room) return;
     try {
-      const response = await fetch(ctx.current.endpoint, {
-        cache: 'no-store',
-        headers: { 'X-OnMenu-Guest': ctx.current.guestId },
-      });
+      const response = await (demoClient?.request ?? fetch)(
+        ctx.current.endpoint,
+        {
+          cache: 'no-store',
+          headers: { 'X-OnMenu-Guest': ctx.current.guestId },
+        },
+      );
       if (!response.ok) {
         if (response.status === 403) setError('ACCESS');
         throw new Error();
@@ -252,10 +266,10 @@ export default function OrderApp({
     } catch {
       setConnected(false);
     }
-  }, [showState]);
+  }, [showState, demoClient]);
   useEffect(() => {
     const url = new URL(window.location.href);
-    if (role === 'guest') {
+    if (role === 'guest' && !localDemo) {
       url.pathname = '/order';
       url.search = new URLSearchParams(scope).toString();
       history.replaceState(null, '', url);
@@ -307,14 +321,17 @@ export default function OrderApp({
         role: input.role ?? ctx.current.role,
       };
       try {
-        const response = await fetch(ctx.current.endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-OnMenu-Guest': ctx.current.guestId,
+        const response = await (demoClient?.request ?? fetch)(
+          ctx.current.endpoint,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-OnMenu-Guest': ctx.current.guestId,
+            },
+            body: JSON.stringify(command),
           },
-          body: JSON.stringify(command),
-        });
+        );
         const data = (await response.json()) as DemoState & { error?: string };
         if (!response.ok) {
           setError(data.error ?? 'UNAVAILABLE');
@@ -333,7 +350,7 @@ export default function OrderApp({
         setBusy(false);
       }
     },
-    [refresh, showState],
+    [refresh, showState, demoClient],
   );
   useEffect(() => {
     if (!notice) return;
@@ -347,7 +364,7 @@ export default function OrderApp({
         ? '/order?' + new URLSearchParams(scope)
         : tableLinks[guestTable];
     if (!path) return;
-    const url = new URL(path, window.location.origin);
+    const url = new URL(href(path), window.location.origin);
     setShareUrl(url.toString());
     setQr('');
     void QRCode.toDataURL(url.toString(), {
@@ -718,7 +735,7 @@ export default function OrderApp({
                 {item.photo ? (
                   <img
                     className="food-photo"
-                    src={'/food/' + item.photo + '.jpg'}
+                    src={asset('/food/' + item.photo + '.jpg')}
                     alt={`${item.zh} · ${item.en}`}
                     width={700}
                     height={700}
@@ -769,7 +786,9 @@ export default function OrderApp({
           <div className="cart-sync">
             <span className={connected ? 'sync-dot' : 'sync-dot offline'} />
             {connected
-              ? t('已同步', 'Synced')
+              ? localDemo
+                ? t('本浏览器已保存', 'Saved in this browser')
+                : t('已同步', 'Synced')
               : t('连接中 / 等待重连', 'Connecting / reconnecting')}
             <span>{t(`第 ${c.round} 轮`, `Round ${c.round}`)}</span>
           </div>
@@ -1124,19 +1143,24 @@ export default function OrderApp({
   return (
     <main>
       <div className="demo-bar">
-        {t(
-          '试用菜单 · 收款与出单均为模拟',
-          'SAMPLE MENU · Payments and tickets are simulated',
-        )}
+        {localDemo
+          ? t(
+              '公开演示 · 数据仅在本浏览器保存 · 请勿支付真实款项',
+              'PUBLIC DEMO · Data stays in this browser · No real payments',
+            )
+          : t(
+              '试用菜单 · 收款与出单均为模拟',
+              'SAMPLE MENU · Payments and tickets are simulated',
+            )}
       </div>
       <header className="topbar">
         <a
           className="brand"
-          href={
+          href={href(
             role === 'guest'
               ? '/order?' + new URLSearchParams(scope)
-              : '/staff/' + role + '?room=' + room
-          }
+              : '/staff/' + role + '?room=' + room,
+          )}
         >
           <span className="brand-icon">
             <Utensils size={25} />
@@ -1204,7 +1228,7 @@ export default function OrderApp({
                 .map(([key, zh, en]) => (
                   <a
                     key={key}
-                    href={'/staff/' + key + '?room=' + room}
+                    href={href('/staff/' + key + '?room=' + room)}
                     className={role === key ? 'active' : ''}
                     aria-current={role === key ? 'page' : undefined}
                   >
@@ -1870,7 +1894,7 @@ export default function OrderApp({
               {modal.item.photo && (
                 <img
                   className="dish-modal-image"
-                  src={'/food/' + modal.item.photo + '.jpg'}
+                  src={asset('/food/' + modal.item.photo + '.jpg')}
                   alt={modal.item.zh}
                 />
               )}
@@ -2077,10 +2101,15 @@ export default function OrderApp({
             <>
               <DialogTitle>{t('一起点这一桌', 'Join this table')}</DialogTitle>
               <DialogDescription>
-                {t(
-                  '扫码或打开同一个链接，共享本桌购物车。私密预览需使用你的账号登录；正式营业版将提供免登录顾客入口。',
-                  'Scan or open the same link to share this cart. This private preview requires your account; a guest entry without sign-in is planned for live use.',
-                )}
+                {localDemo
+                  ? t(
+                      '在同一浏览器的新窗口打开此链接，可以共同点餐。用另一台手机扫码只会打开独立演示，不会同步订单。',
+                      'Open this link in another window of the same browser to share the cart. Scanning on another phone starts a separate demo; orders do not sync across devices.',
+                    )
+                  : t(
+                      '扫码或打开同一个链接，共享本桌购物车。私密预览需使用你的账号登录；正式营业版将提供免登录顾客入口。',
+                      'Scan or open the same link to share this cart. This private preview requires your account; a guest entry without sign-in is planned for live use.',
+                    )}
               </DialogDescription>
               <div className="share-table">
                 TABLE / 桌号 <strong>{guestTable}</strong>
@@ -2146,7 +2175,7 @@ export default function OrderApp({
               {role !== 'guest' && (
                 <a
                   className="outline-btn"
-                  href={tableLinks[guestTable]}
+                  href={href(tableLinks[guestTable])}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
