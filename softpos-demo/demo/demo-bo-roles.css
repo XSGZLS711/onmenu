@@ -1,0 +1,67 @@
+/* Roles and access page (spec 4.5). Built on the list page and drawer of demo-bo-products.css; uses only the --bo-* tokens. */
+
+/* The matrix has a three-column grid, which needs more room than the 480 px of a normal drawer. */
+.bo-drawer.bo-drawer-wide { width: min(760px, 100vw); }
+
+/* Roles are not selected in bulk, so the check boxes and the bulk bar are not shown. */
+.bo-roles-page .bo-table tbody td.bo-c-sel input { display: none; }
+.bo-roles-page .bo-foot-left { display: none; }
+.bo-roles-page .bo-table td.bo-c-sel, .bo-roles-page .bo-table th.bo-c-sel { width: 36px; }
+
+.bo-scope .bo-rl-access { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.bo-scope .bo-rl-bar { display: inline-block; width: 64px; height: 6px; border-radius: 3px; background: var(--bo-border); overflow: hidden; }
+.bo-scope .bo-rl-bar i { display: block; height: 100%; background: var(--bo-primary); }
+
+/* ---- the drawer ---- */
+.bo-scope .bo-rm-intro { margin: 0 0 12px; display: grid; gap: 4px; color: var(--bo-muted); font-size: var(--bo-fs-body); }
+.bo-scope .bo-rm-intro p { margin: 0; }
+.bo-scope .bo-rm-fixed { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: var(--bo-radius); background: #fff7ed; color: var(--bo-warn); }
+.bo-scope .bo-rm-copy { margin-bottom: 12px; }
+.bo-scope .bo-rm-copied { margin: 0 0 8px; padding: 8px 10px; border-radius: var(--bo-radius); background: #eff6ff; color: var(--bo-primary); font-size: var(--bo-fs-body); }
+.bo-scope .bo-rm-summary { margin: 0 0 6px; font-weight: 600; font-size: var(--bo-fs-body); }
+.bo-scope .bo-rm-warn { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; }
+.bo-scope .bo-rm-warn[hidden] { display: none; }
+.bo-scope .bo-rm-warn li { display: flex; align-items: flex-start; gap: 6px; color: var(--bo-warn); font-size: var(--bo-fs-small); }
+.bo-scope .bo-rm-warn .bo-ico { flex: none; margin-top: 1px; }
+
+.bo-scope .bo-rm-group { margin: 0 0 14px; padding: 0; border: 0; min-width: 0; }
+.bo-scope .bo-rm-legend { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bo-border); font-size: var(--bo-fs-heading); font-weight: 600; }
+.bo-scope .bo-rm-count { margin-left: auto; color: var(--bo-muted); font-size: var(--bo-fs-small); font-weight: 400; font-variant-numeric: tabular-nums; }
+.bo-scope .bo-rm-group .bo-help { margin: 6px 0 4px; }
+.bo-scope .bo-rm-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 12px; }
+.bo-scope .bo-rm-item { position: relative; display: flex; align-items: center; min-height: var(--bo-control-h); min-width: 0; }
+.bo-scope .bo-rm-lab { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; min-height: var(--bo-control-h); cursor: pointer; font-size: var(--bo-fs-body); line-height: 1.25; }
+.bo-scope .bo-rm-lab input, .bo-scope .bo-rm-all { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--bo-primary); }
+.bo-scope .bo-rm-lab input:disabled, .bo-scope .bo-rm-all:disabled { cursor: not-allowed; }
+@media (pointer: coarse) { .bo-scope .bo-rm-lab input, .bo-scope .bo-rm-all { width: 22px; height: 22px; } }
+
+.bo-scope .bo-rm-q { flex: none; width: 20px; height: 20px; min-width: 0; min-height: 0; padding: 0; margin: 0; align-self: center; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--bo-border); border-radius: 50%; background: var(--bo-surface); color: var(--bo-muted); font: 600 11px/1 var(--bo-font); cursor: pointer; }
+.bo-scope .bo-rm-q:hover, .bo-scope .bo-rm-q[aria-expanded="true"] { border-color: var(--bo-primary); color: var(--bo-primary); }
+@media (pointer: coarse) { .bo-scope .bo-rm-q { width: 28px; height: 28px; font-size: 13px; } }
+.bo-scope .bo-rm-level label, .bo-scope .bo-rm-intro p { margin: 0; }
+.bo-scope .bo-rm-lab, .bo-scope .bo-rm-lab span, .bo-scope .bo-rm-level label { font-weight: 400; }
+.bo-scope .bo-rm-tip { position: absolute; z-index: 5; left: 0; right: 0; top: 100%; margin-top: 2px; padding: 8px 10px; border: 1px solid var(--bo-border); border-radius: var(--bo-radius); background: var(--bo-surface); box-shadow: 0 6px 18px rgba(15, 23, 42, .16); font-size: var(--bo-fs-small); line-height: 1.4; color: var(--bo-text); min-width: 200px; }
+.bo-scope .bo-rm-tip[hidden] { display: none; }
+
+.bo-scope .bo-rm-level { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; min-height: var(--bo-row-h); border-bottom: 1px solid var(--bo-border); font-size: var(--bo-fs-body); }
+.bo-scope .bo-rm-level:last-child { border-bottom: 0; }
+.bo-scope .bo-rm-level label { min-width: 0; }
+.bo-scope .bo-rm-level .bo-rm-tip { left: auto; right: 0; width: 280px; }
+.bo-scope .bo-rm-sel { width: 190px; max-width: 100%; grid-column: 3; }
+.bo-scope .bo-rm-level > .bo-rm-q:nth-child(2) { grid-column: 2; }
+.bo-scope .bo-rm-level > .bo-rm-sel:nth-child(2) { grid-column: 3; grid-row: 1; }
+
+/* An administrator role is read-only: one button closes the drawer. */
+.bo-drawer.bo-roles-fixed .bo-drawer-foot > .bo-btn:nth-last-child(2) { display: none; }
+
+@media (max-width: 800px) { .bo-scope .bo-rm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) {
+  .bo-scope .bo-rm-grid { grid-template-columns: minmax(0, 1fr); }
+  .bo-scope .bo-rm-level { grid-template-columns: minmax(0, 1fr) auto; }
+  .bo-scope .bo-rm-level .bo-rm-sel { grid-column: 1 / -1; width: 100%; margin-bottom: 8px; }
+  .bo-scope .bo-rm-level > .bo-rm-q:nth-child(2) { grid-column: 2; }
+}
+
+/* The note that replaces the old Role access form inside System Setting. */
+.bo-roles-note { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 8px 0; padding: 12px 14px; border: 1px solid var(--bo-border); border-radius: var(--bo-radius-lg); background: var(--bo-th); }
+.bo-roles-note p { margin: 0; font-size: var(--bo-fs-body); color: var(--bo-text); }

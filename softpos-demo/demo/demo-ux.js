@@ -248,7 +248,7 @@
   }
   function openProduct(name, row, manager) {
     if (manager && nav()) {
-      var page = pageByKey('stock:productsView');
+      var page = pageByKey('bo:products') || pageByKey('stock:productsView');
       if (!page) return;
       nav().openItem(page);
       setTimeout(function () {

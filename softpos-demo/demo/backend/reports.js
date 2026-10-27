@@ -267,6 +267,389 @@
     return Api.db.zReports.filter(function (z) { return z.shopId === shopId; }).slice().reverse().slice(0, 30);
   });
 
+  // ---- report centre (back-office): list endpoints with paging, sorting, search and CSV export ----------------------------
+  //   GET /api/reports                  the reports this back end can run
+  //   GET /api/reports/lookups          shops, categories, users, ingredients and movement types for the filters
+  //   GET /api/reports/:key             ?page&pageSize&sort&q&filter[shopId|from|to|...]  ->  { columns, rows, total, totals, ... }
+  //   GET /api/reports/:key/export      the same filters, every matching row, ?format=csv
+  // Read-only: invoices, stock and recipes are only read here.
+  var BO_REPORTS = {};
+  function boDef(key, def) { def.key = key; BO_REPORTS[key] = def; }
+  function boFilters(q) {
+    var f = {};
+    Object.keys(q).forEach(function (k) { var m = /^filter\[(.+)\]$/.exec(k); if (m) f[m[1]] = q[k]; });
+    return f;
+  }
+  // "2026-10-27", "2026-10-27T08:00" or with seconds, read as local time; an end given without seconds runs to the end of that minute
+  function boTime(v, end) {
+    var s = String(v || '');
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) s += end ? 'T23:59' : 'T00:00';
+    var minute = /T\d{2}:\d{2}$/.test(s);
+    if (minute) s += ':00';
+    var ms = new Date(s).getTime();
+    return isFinite(ms) ? ms + (end ? (minute ? 59999 : 999) : 0) : NaN;
+  }
+  function boRange(f) {
+    var from = boTime(f.from, false), to = boTime(f.to, true);
+    Api.need(isFinite(from) && isFinite(to), 'Enter a valid date range.');
+    Api.need(to >= from, 'End date/time must be on or after start date/time.');
+    return { from: from, to: to };
+  }
+  function boShops(f) {
+    if (f.shopId === undefined || f.shopId === '' || f.shopId === 'all') return Api.db.shops.map(function (s) { return s.shopId; });
+    Api.need(Api.shop(f.shopId), 'Choose a shop from the list.');
+    return [Number(f.shopId)];
+  }
+  function boStamp(ms) { return localIso(ms).slice(0, 16).replace('T', ' '); }
+  function boUnit(p) { return (Api.db.measurements.filter(function (m) { return m.id === p.measurementId; })[0] || {}).name || 'EACH'; }
+  function boCategory(p) { return (Api.category(p.categoryId) || {}).name || ''; }
+  function boShopName(id) { return (Api.shop(id) || {}).shopName || ''; }
+  function boDocs(ctx, extra) {
+    return gather(Object.assign({ shopId: ctx.shopFilter, from: ctx.range.from, to: ctx.range.to, locationId: '', userId: '', productId: 0 }, extra || {}));
+  }
+  function boSearch(rows, text, keys) {
+    var terms = String(text || '').toLowerCase().split(/\s+/).filter(Boolean);
+    if (!terms.length) return rows;
+    return rows.filter(function (r) {
+      var hay = keys.map(function (k) { return r[k] === null || r[k] === undefined ? '' : String(r[k]); }).join(' ').toLowerCase();
+      return terms.every(function (t) { return hay.indexOf(t) >= 0; });
+    });
+  }
+  // sort=name (ascending) or sort=-name (descending); empty values always go last
+  function boSort(rows, columns, spec) {
+    var desc = String(spec || '').charAt(0) === '-', key = String(spec || '').replace(/^-/, '');
+    var col = columns.filter(function (c) { return c.key === key; })[0];
+    if (!col) return rows;
+    var by = col.sortKey || key;
+    return rows.slice().sort(function (a, b) {
+      var x = a[by], y = b[by], r;
+      if (x === null || x === undefined) return y === null || y === undefined ? 0 : 1;
+      if (y === null || y === undefined) return -1;
+      r = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), undefined, { numeric: true, sensitivity: 'base' });
+      return desc ? -r : r;
+    });
+  }
+  function boTotals(columns, rows) {
+    var t = {};
+    columns.forEach(function (c) {
+      if (!c.sum) return;
+      var s = 0;
+      rows.forEach(function (r) { s += Number(r[c.key]) || 0; });
+      t[c.key] = c.type === 'qty' ? round4(s) : round2(s);
+    });
+    return t;
+  }
+  function boRun(key, q, everything) {
+    var def = BO_REPORTS[key];
+    need(def, 'This report does not exist.', 404);
+    var f = boFilters(q), shops = boShops(f);
+    var ctx = { f: f, q: q, shops: shops, shopFilter: shops.length === 1 ? shops[0] : 0, range: def.range ? boRange(f) : null };
+    var columns = typeof def.columns === 'function' ? def.columns(ctx) : def.columns;
+    var built = def.build(ctx);
+    var rows = boSort(boSearch(built.rows, q.q, def.search || []), columns, q.sort || def.sort);
+    var totals = def.totals ? def.totals(rows, ctx, built, columns) : boTotals(columns, rows);
+    var size = everything ? Math.max(rows.length, 1) : Math.min(1000, Math.max(1, Math.floor(Number(q.pageSize)) || 50));
+    var pages = Math.max(1, Math.ceil(rows.length / size)), page = Math.min(pages, Math.max(1, Math.floor(Number(q.page)) || 1));
+    return { key: key, title: def.title, columns: columns, rows: rows.slice((page - 1) * size, page * size), total: rows.length, totals: totals, page: page, pageSize: size, pageCount: pages,
+      sort: q.sort || def.sort, note: typeof def.note === 'function' ? def.note(ctx) : (def.note || ''), from: ctx.range ? boStamp(ctx.range.from) : '', to: ctx.range ? boStamp(ctx.range.to) : '',
+      shopName: ctx.shopFilter ? boShopName(ctx.shopFilter) : '', generatedUtc: Api.nowIso() };
+  }
+
+  // shared pieces of the sales reports
+  var BO_SALES_COLS = [
+    { key: 'invoiceCount', label: 'Invoices', type: 'int', sum: true }, { key: 'refundCount', label: 'Refund count', type: 'int', sum: true }, { key: 'quantity', label: 'Net qty', type: 'qty', sum: true },
+    { key: 'sales', label: 'Sales', type: 'money', sum: true }, { key: 'refunds', label: 'Refund value', type: 'money', sum: true }, { key: 'discounts', label: 'Discount', type: 'money', sum: true },
+    { key: 'vat', label: 'VAT', type: 'money', sum: true }, { key: 'netSales', label: 'Net sales', type: 'money', sum: true }
+  ];
+  var BO_SALES_NOTE = 'Amounts include VAT. Refunds reduce net sales. Times use the recorded transaction date and time.';
+  function boZero(fields) { return Object.assign({ _docs: {}, invoiceCount: 0, refundCount: 0, quantity: 0, sales: 0, refunds: 0, discounts: 0, vat: 0, netSales: 0 }, fields); }
+  // sum the lines of the documents into one row per key({doc, line}) -> { key, fields } (null = skip the line)
+  function boGroup(docs, keyOf) {
+    var map = {};
+    docs.forEach(function (d) {
+      d.lines.forEach(function (l) {
+        var k = keyOf(d, l);
+        if (!k) return;
+        var m = map[k.key] || (map[k.key] = boZero(k.fields));
+        if (d.kind === 'sale') { if (!m._docs[d.no]) { m._docs[d.no] = 1; m.invoiceCount++; } m.sales += l.total; m.quantity += l.quantity; m.vat += l.vat; m.discounts += l.discount; }
+        else { if (!m._docs[d.no]) { m._docs[d.no] = 1; m.refundCount++; } m.refunds += l.total; m.quantity -= l.quantity; m.vat -= l.vat; }
+      });
+    });
+    return map;
+  }
+  function boClose(m) {
+    delete m._docs;
+    ['sales', 'refunds', 'discounts', 'vat'].forEach(function (k) { m[k] = round2(m[k]); });
+    m.quantity = round4(m.quantity); m.netSales = round2(m.sales - m.refunds);
+    return m;
+  }
+  function boMapRows(map) { return Object.keys(map).map(function (k) { return boClose(map[k]); }); }
+  function boWithAverage(rows, ctx, built, columns) {
+    var t = boTotals(columns, rows);
+    t.average = t.invoiceCount ? round2(t.netSales / t.invoiceCount) : 0;
+    return t;
+  }
+  function boPeriodKey(ms, g) {
+    var d = new Date(ms);
+    if (g === 'month') return d.getFullYear() + '-' + two(d.getMonth() + 1);
+    if (g === 'week') { var w = new Date(d.getFullYear(), d.getMonth(), d.getDate()); w.setDate(w.getDate() - (w.getDay() + 6) % 7); return localDay(w.getTime()); }
+    return localDay(ms);
+  }
+
+  boDef('sales-by-period', {
+    title: 'Sales by period', range: true, sort: '-period', search: ['period'], note: BO_SALES_NOTE,
+    columns: function (ctx) {
+      var g = ctx.f.group;
+      return [{ key: 'period', label: g === 'month' ? 'Month' : g === 'week' ? 'Week starting' : 'Day', type: 'text' }].concat(BO_SALES_COLS, [{ key: 'average', label: 'Average invoice', type: 'money' }]);
+    },
+    build: function (ctx) {
+      var g = ['day', 'week', 'month'].indexOf(ctx.f.group) >= 0 ? ctx.f.group : 'day';
+      var map = boGroup(boDocs(ctx), function (d) { var p = boPeriodKey(d.at, g); return { key: p, fields: { period: p } }; });
+      // quiet periods are listed too, so a closed day shows as 0
+      var step = new Date(ctx.range.from);
+      step.setHours(0, 0, 0, 0);
+      for (var n = 0; step.getTime() <= ctx.range.to && n < 1100; n++, step.setDate(step.getDate() + 1)) {
+        var p = boPeriodKey(step.getTime(), g);
+        if (!map[p]) map[p] = boZero({ period: p });
+      }
+      var rows = boMapRows(map);
+      rows.forEach(function (r) { r.average = r.invoiceCount ? round2(r.netSales / r.invoiceCount) : 0; });
+      return { rows: rows };
+    },
+    totals: boWithAverage
+  });
+  boDef('sales-by-user', {
+    title: 'Sales by user', range: true, sort: '-netSales', search: ['user'], note: BO_SALES_NOTE,
+    columns: [{ key: 'user', label: 'User', type: 'text' }].concat(BO_SALES_COLS, [{ key: 'average', label: 'Average invoice', type: 'money' }]),
+    build: function (ctx) {
+      var rows = boMapRows(boGroup(boDocs(ctx), function (d) { return { key: d.userId, fields: { user: d.cashier } }; }));
+      rows.forEach(function (r) { r.average = r.invoiceCount ? round2(r.netSales / r.invoiceCount) : 0; });
+      return { rows: rows };
+    },
+    totals: boWithAverage
+  });
+  boDef('sales-detail', {
+    title: 'Sales detail', range: true, sort: '-date', search: ['invoiceNo', 'code', 'name', 'user', 'description'],
+    note: 'One row per invoice line. Amounts include VAT. Refund lines are negative.',
+    columns: [{ key: 'date', label: 'Date / time', type: 'datetime' }, { key: 'invoiceNo', label: 'Invoice', type: 'text' }, { key: 'type', label: 'Type', type: 'text', tr: true },
+      { key: 'code', label: 'Code', type: 'text' }, { key: 'name', label: 'Product', type: 'text' }, { key: 'description', label: 'Description', type: 'text' }, { key: 'user', label: 'User', type: 'text' },
+      { key: 'shopName', label: 'Shop', type: 'text' }, { key: 'quantity', label: 'Qty', type: 'qty', sum: true }, { key: 'unitPrice', label: 'Unit price', type: 'money' },
+      { key: 'discount', label: 'Discount', type: 'money', sum: true }, { key: 'vat', label: 'VAT', type: 'money', sum: true }, { key: 'total', label: 'Line total', type: 'money', sum: true }],
+    build: function (ctx) {
+      var rows = detailRows(boDocs(ctx, { userId: ctx.f.cashier || '' })).map(function (r) {
+        return { date: r.invoiceDate.slice(0, 16).replace('T', ' '), invoiceNo: r.invoiceNo, type: r.isRefund ? 'Refund' : 'Sale', code: r.productCode, name: r.productName, description: r.description || '',
+          user: r.cashier, shopName: r.shopName, quantity: r.quantity, unitPrice: r.unitPrice, discount: r.discount, vat: r.vat, total: r.total };
+      }).filter(function (r) { return !ctx.f.type || (ctx.f.type === 'refund' ? r.type === 'Refund' : r.type === 'Sale'); });
+      return { rows: rows };
+    }
+  });
+
+  function boProductSales(perShop) {
+    return {
+      title: perShop ? 'Product sales by shop' : 'Product sales', range: true, sort: perShop ? 'shopName' : '-netSales', search: ['code', 'name', 'category', 'shopName'], note: BO_SALES_NOTE,
+      columns: (perShop ? [{ key: 'shopName', label: 'Shop', type: 'text' }] : []).concat([{ key: 'code', label: 'Code', type: 'text' }, { key: 'name', label: 'Product', type: 'text' }, { key: 'category', label: 'Category', type: 'text' }],
+        BO_SALES_COLS, [{ key: 'share', label: 'Share of net sales (%)', type: 'pct', sum: true }]),
+      build: function (ctx) {
+        var map = boGroup(boDocs(ctx), function (d, l) {
+          var p = Api.product(l.productId);
+          if (!p || (ctx.f.categoryId && p.categoryId !== Number(ctx.f.categoryId))) return null;
+          return { key: (perShop ? d.shopId + ':' : '') + p.productId, fields: { shopId: d.shopId, shopName: boShopName(d.shopId), code: p.code, name: p.name, category: boCategory(p) } };
+        });
+        var rows = boMapRows(map), base = {};
+        rows.forEach(function (r) { var k = perShop ? r.shopId : 0; base[k] = (base[k] || 0) + r.netSales; });
+        rows.forEach(function (r) { var b = base[perShop ? r.shopId : 0]; r.share = b ? round2(r.netSales / b * 100) : 0; });
+        return { rows: rows };
+      }
+    };
+  }
+  boDef('product-sales', boProductSales(false));
+  boDef('product-sales-by-shop', boProductSales(true));
+
+  // stock reports
+  var BO_STATUS_RANK = { 'Negative': 0, 'Out of stock': 1, 'Low': 2, 'In stock': 3, 'Not tracked': 4 };
+  function boStockItems(ctx, scope) {
+    var recipeIds = {};
+    Object.keys(Api.db.recipes).forEach(function (pid) { Api.db.recipes[pid].forEach(function (c) { if (c.active !== false) recipeIds[c.materialId] = 1; }); });
+    var items = Api.db.products.filter(function (p) {
+      if (p.active === false) return false;
+      if (ctx.f.categoryId && p.categoryId !== Number(ctx.f.categoryId)) return false;
+      if (scope === 'all') return true;
+      return !!p.stockItem && (scope !== 'ingredients' || recipeIds[p.productId]);
+    });
+    return { items: items, ingredient: recipeIds };
+  }
+  boDef('stock-levels', {
+    title: 'Stock levels', sort: 'name', search: ['code', 'name', 'category', 'shopName'], note: 'Current stock, valued at cost and at retail price. Items that are not stocked are listed only when you choose all items.',
+    columns: [{ key: 'shopName', label: 'Shop', type: 'text' }, { key: 'code', label: 'Code', type: 'text' }, { key: 'name', label: 'Product', type: 'text' }, { key: 'category', label: 'Category', type: 'text' },
+      { key: 'unit', label: 'Unit', type: 'text' }, { key: 'stock', label: 'Stock', type: 'qty', sum: true }, { key: 'cost', label: 'Unit cost', type: 'money' }, { key: 'costValue', label: 'Cost value', type: 'money', sum: true },
+      { key: 'price', label: 'Retail price', type: 'money' }, { key: 'retailValue', label: 'Retail value', type: 'money', sum: true }, { key: 'status', label: 'Status', type: 'text', tr: true, sortKey: 'rank' }],
+    build: function (ctx) {
+      var set = boStockItems(ctx, ctx.f.scope === 'all' ? 'all' : 'stock'), rows = [];
+      ctx.shops.forEach(function (shopId) {
+        set.items.forEach(function (p) {
+          var qty = p.stockItem ? Api.stockOf(shopId, p.productId) : null;
+          var status = qty === null ? 'Not tracked' : qty < 0 ? 'Negative' : qty === 0 ? 'Out of stock' : 'In stock';
+          if (ctx.f.status === 'negative' && status !== 'Negative') return;
+          if (ctx.f.status === 'out' && status !== 'Out of stock') return;
+          if (ctx.f.status === 'in' && status !== 'In stock') return;
+          rows.push({ shopId: shopId, shopName: boShopName(shopId), code: p.code, name: p.name, category: boCategory(p), unit: boUnit(p), stock: qty, cost: p.cost, costValue: qty === null ? null : round2(qty * p.cost),
+            price: p.price, retailValue: qty === null ? null : round2(qty * p.price), status: status, rank: BO_STATUS_RANK[status] });
+        });
+      });
+      return { rows: rows };
+    }
+  });
+
+  // how much of each stock item went out in the period: sold as it is, or used up by the recipes of the dishes sold
+  function boUsage(shopId, range) {
+    var docs = gather({ shopId: shopId, from: range.from, to: range.to, locationId: '', userId: '', productId: 0 });
+    var recipesOn = Api.salesOptions(shopId).productComponentsEnabled !== false, used = {};
+    docs.forEach(function (d) {
+      d.lines.forEach(function (l, i) {
+        // a refund gives goods back to stock only when it was marked "restock"
+        var sign = d.kind === 'sale' ? 1 : (d.refund.lines[i] && d.refund.lines[i].restock ? -1 : 0), p = Api.product(l.productId);
+        if (!sign || !p) return;
+        if (p.stockItem) { used[p.productId] = (used[p.productId] || 0) + sign * l.quantity; return; }
+        if (!recipesOn) return;
+        (Api.db.recipes[p.productId] || []).forEach(function (c) { if (c.active !== false) used[c.materialId] = (used[c.materialId] || 0) + sign * c.quantity * l.quantity; });
+      });
+    });
+    return { docs: docs, used: used };
+  }
+  boDef('low-negative-stock', {
+    title: 'Low and negative stock', range: true, sort: 'stock', search: ['code', 'name', 'category', 'shopName'],
+    note: 'Items at or below the low-stock level. Average use counts what was sold in the period, directly or through recipes; days left is the stock divided by that average.',
+    columns: [{ key: 'shopName', label: 'Shop', type: 'text' }, { key: 'code', label: 'Code', type: 'text' }, { key: 'name', label: 'Item', type: 'text' }, { key: 'category', label: 'Category', type: 'text' },
+      { key: 'kind', label: 'Type', type: 'text', tr: true }, { key: 'unit', label: 'Unit', type: 'text' }, { key: 'stock', label: 'Stock', type: 'qty' }, { key: 'average', label: 'Average use per day', type: 'qty' },
+      { key: 'daysLeft', label: 'Days left', type: 'qty' }, { key: 'status', label: 'Status', type: 'text', tr: true, sortKey: 'rank' }],
+    build: function (ctx) {
+      var set = boStockItems(ctx, ctx.f.scope === 'ingredients' ? 'ingredients' : 'stock'), rows = [];
+      var lowAt = ctx.f.lowAt === undefined || ctx.f.lowAt === '' ? 20 : Number(ctx.f.lowAt);
+      Api.need(isFinite(lowAt) && lowAt >= 0, 'Enter the low-stock level as a number, 0 or more.');
+      var days = Math.max(1, (ctx.range.to - ctx.range.from) / 864e5);
+      ctx.shops.forEach(function (shopId) {
+        var use = boUsage(shopId, ctx.range).used;
+        set.items.forEach(function (p) {
+          var qty = Api.stockOf(shopId, p.productId), status = qty < 0 ? 'Negative' : qty === 0 ? 'Out of stock' : qty <= lowAt ? 'Low' : '';
+          if (!status || (ctx.f.status === 'negative' && status !== 'Negative') || (ctx.f.status === 'low' && status === 'Negative')) return;
+          var avg = Math.max(0, (use[p.productId] || 0) / days);
+          rows.push({ shopId: shopId, shopName: boShopName(shopId), code: p.code, name: p.name, category: boCategory(p), kind: set.ingredient[p.productId] ? 'Ingredient' : 'Product', unit: boUnit(p), stock: qty,
+            average: round4(avg), daysLeft: qty <= 0 ? 0 : avg > 0 ? Math.round(qty / avg * 10) / 10 : null, status: status, rank: BO_STATUS_RANK[status] });
+        });
+      });
+      return { rows: rows };
+    },
+    totals: function () { return {}; }
+  });
+  var BO_MOVE_LABEL = { SALE: 'Sale', RECEIVE: 'Goods received', ADJUST: 'Adjustment', TRANSFER_OUT: 'Transfer out', TRANSFER_IN: 'Transfer in', STOCKTAKE: 'Stock take', REFUND: 'Refund restock' };
+  boDef('stock-movement', {
+    title: 'Stock movement', range: true, sort: '-date', search: ['code', 'name', 'document', 'user', 'type'], note: 'Every change to stock in the period: sales, goods received, adjustments, transfers and stock takes. Cost value is the change times the current unit cost.',
+    columns: [{ key: 'date', label: 'Date / time', type: 'datetime' }, { key: 'shopName', label: 'Shop', type: 'text' }, { key: 'code', label: 'Code', type: 'text' }, { key: 'name', label: 'Product', type: 'text' },
+      { key: 'type', label: 'Movement', type: 'text', tr: true }, { key: 'document', label: 'Document', type: 'text' }, { key: 'user', label: 'User', type: 'text' }, { key: 'unit', label: 'Unit', type: 'text' },
+      { key: 'delta', label: 'Quantity change', type: 'qty', sum: true }, { key: 'after', label: 'Balance after', type: 'qty' }, { key: 'unitCost', label: 'Unit cost', type: 'money' }, { key: 'costValue', label: 'Cost value', type: 'money', sum: true }],
+    build: function (ctx) {
+      var rows = [];
+      Api.db.movements.forEach(function (m) {
+        var at = new Date(m.atUtc).getTime(), p = Api.product(m.productId);
+        if (!p || ctx.shops.indexOf(m.shopId) < 0 || at < ctx.range.from || at > ctx.range.to || (ctx.f.type && m.type !== ctx.f.type)) return;
+        rows.push({ date: boStamp(at), shopName: boShopName(m.shopId), code: p.code, name: p.name, type: BO_MOVE_LABEL[m.type] || m.type, typeCode: m.type, document: m.ref, user: m.user, unit: boUnit(p),
+          delta: round4(m.delta), after: m.after, unitCost: p.cost, costValue: round2(m.delta * p.cost) });
+      });
+      return { rows: rows };
+    }
+  });
+
+  // recipes
+  boDef('ingredient-consumption', {
+    title: 'Ingredient consumption', range: true, sort: '-cost', search: ['code', 'name', 'shopName'],
+    note: 'Quantity used = dishes sold in the period times the active recipe lines (refunds marked restock give goods back). Cost uses the current unit cost. Share of sales = cost divided by net sales without VAT in the same period and shop.',
+    columns: [{ key: 'shopName', label: 'Shop', type: 'text' }, { key: 'code', label: 'Code', type: 'text' }, { key: 'name', label: 'Ingredient', type: 'text' }, { key: 'unit', label: 'Unit', type: 'text' },
+      { key: 'stock', label: 'Current stock', type: 'qty' }, { key: 'used', label: 'Quantity used', type: 'qty' }, { key: 'unitCost', label: 'Unit cost', type: 'money' }, { key: 'cost', label: 'Cost', type: 'money', sum: true },
+      { key: 'share', label: 'Share of sales (%)', type: 'pct' }, { key: 'dishes', label: 'Dishes', type: 'int' }],
+    build: function (ctx) {
+      var dishes = {}, rows = [], sales = {};
+      Object.keys(Api.db.recipes).forEach(function (pid) { Api.db.recipes[pid].forEach(function (c) { if (c.active !== false) dishes[c.materialId] = (dishes[c.materialId] || 0) + 1; }); });
+      ctx.shops.forEach(function (shopId) {
+        var u = boUsage(shopId, ctx.range);
+        sales[shopId] = totalsOf(u.docs).subtotal;
+        Object.keys(dishes).map(Number).forEach(function (mid) {
+          var m = Api.product(mid);
+          if (!m || (ctx.f.ingredientId && mid !== Number(ctx.f.ingredientId))) return;
+          var used = round4(u.used[mid] || 0), cost = round2(used * m.cost);
+          rows.push({ shopId: shopId, shopName: boShopName(shopId), code: m.code, name: m.name, unit: boUnit(m), stock: Api.stockOf(shopId, mid), used: used, unitCost: m.cost, cost: cost,
+            share: sales[shopId] > 0 ? round2(cost / sales[shopId] * 100) : 0, dishes: dishes[mid] });
+        });
+      });
+      return { rows: rows, sales: sales };
+    },
+    totals: function (rows, ctx, built, columns) {
+      var t = boTotals(columns, rows), base = 0;
+      ctx.shops.forEach(function (shopId) { base += built.sales[shopId] || 0; });
+      t.share = base > 0 ? round2(t.cost / base * 100) : 0;
+      return t;
+    }
+  });
+  boDef('recipe-components', {
+    title: 'Recipe components', sort: 'dish', search: ['dishCode', 'dish', 'code', 'name'], note: 'Every line of every recipe, with the cost of that line at the current unit cost.',
+    columns: [{ key: 'dishCode', label: 'Dish code', type: 'text' }, { key: 'dish', label: 'Dish', type: 'text' }, { key: 'code', label: 'Ingredient code', type: 'text' }, { key: 'name', label: 'Ingredient', type: 'text' },
+      { key: 'quantity', label: 'Quantity', type: 'qty' }, { key: 'unit', label: 'Unit', type: 'text' }, { key: 'unitCost', label: 'Unit cost', type: 'money' }, { key: 'cost', label: 'Line cost', type: 'money', sum: true },
+      { key: 'state', label: 'Status', type: 'text', tr: true }],
+    build: function (ctx) {
+      var rows = [];
+      Api.db.products.forEach(function (d) {
+        (Api.db.recipes[d.productId] || []).forEach(function (c) {
+          var m = Api.product(c.materialId), active = c.active !== false;
+          if (!m || (ctx.f.ingredientId && m.productId !== Number(ctx.f.ingredientId))) return;
+          if ((ctx.f.state === 'active' && !active) || (ctx.f.state === 'inactive' && active)) return;
+          rows.push({ dishCode: d.code, dish: d.name, code: m.code, name: m.name, quantity: c.quantity, unit: boUnit(m), unitCost: m.cost, cost: round2(c.quantity * m.cost), state: active ? 'Active' : 'Inactive' });
+        });
+      });
+      return { rows: rows };
+    }
+  });
+
+  route('GET', '/api/reports', function () {
+    return Object.keys(BO_REPORTS).map(function (k) { return { key: k, title: BO_REPORTS[k].title }; });
+  });
+  route('GET', '/api/reports/lookups', function () {
+    var db = Api.db, recipeIds = {};
+    Object.keys(db.recipes).forEach(function (pid) { db.recipes[pid].forEach(function (c) { recipeIds[c.materialId] = 1; }); });
+    return { shops: db.shops.map(function (s) { return { id: s.shopId, name: s.shopName }; }),
+      categories: db.categories.filter(function (c) { return c.active !== false; }).map(function (c) { return { id: c.id, name: c.name }; }),
+      users: db.users.filter(function (u) { return u.active !== false; }).map(function (u) { return { id: u.id, name: u.fullName }; }),
+      ingredients: Object.keys(recipeIds).map(Number).map(Api.product).filter(Boolean).sort(function (a, b) { return a.name < b.name ? -1 : 1; }).map(function (p) { return { id: p.productId, name: p.name }; }),
+      movementTypes: Object.keys(BO_MOVE_LABEL).map(function (k) { return { id: k, name: BO_MOVE_LABEL[k] }; }) };
+  });
+  route('GET', '/api/reports/:key', function (ctx) { return boRun(ctx.params.key, ctx.q, false); });
+
+  // CSV: UTF-8 with a byte order mark so Excel reads Chinese correctly; the header follows the interface language
+  function boText(s) { return window.SoftPOSLanguage ? window.SoftPOSLanguage.t(s) : s; }
+  function boCell(v, col) {
+    if (v === null || v === undefined || v === '') return '';
+    var s;
+    if (col.type === 'money') s = round2(v).toFixed(2);
+    else if (col.type === 'pct') s = String(Math.round(Number(v) * 10) / 10);
+    else if (col.type === 'qty') s = String(round4(v));
+    else if (col.type === 'int') s = String(Math.round(v));
+    else {
+      s = String(v);
+      if (col.tr) s = boText(s);
+      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; // a text cell must not start a formula in a spreadsheet
+    }
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  route('GET', '/api/reports/:key/export', function (ctx) {
+    need(!ctx.q.format || ctx.q.format === 'csv', 'Only CSV export is available.');
+    var r = boRun(ctx.params.key, ctx.q, true), cols = r.columns, lines = [];
+    lines.push(cols.map(function (c) { return boCell(boText(c.label), { type: 'text' }); }).join(','));
+    r.rows.forEach(function (row) { lines.push(cols.map(function (c) { return boCell(row[c.key], c); }).join(',')); });
+    if (ctx.q.totals !== '0' && r.rows.length) {
+      lines.push(cols.map(function (c, i) { return i === 0 ? boCell(boText('Total'), { type: 'text' }) : boCell(r.totals[c.key], c); }).join(','));
+    }
+    var span = r.from ? '-' + r.from.slice(0, 10) + '_' + r.to.slice(0, 10) : '-' + localDay(Date.now());
+    return new Response('﻿' + lines.join('\r\n') + '\r\n', { status: 200, headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': 'attachment; filename="softpos-' + ctx.params.key + span + '.csv"' } });
+  });
+
   Api.module({
     seed: function (db) { db.zReports = []; },
     afterSeed: function (db) {

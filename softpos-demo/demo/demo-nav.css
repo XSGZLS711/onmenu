@@ -1,47 +1,63 @@
-/* Navigation demo. Left sidebar on desktop and tablets, full-screen "More" with back navigation on phones.
-   Colours reuse the app's own blue so the demo feels like the product. */
+/* Navigation demo (backoffice-design-spec.md section 2). Module rail (56 px, icons only) with a section panel (184 px) beside it on desktop
+   and tablets, full-screen "More" with back navigation on phones. Sizes, colours and type come from demo-bo-tokens.css. */
 .demo-badge { display: inline-block; margin-top: 2px; padding: 1px 8px; border-radius: 99px; background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 700; letter-spacing: .02em; }
-.demo-crumb { margin: 0 0 10px; padding: 0 2px; font-size: 13px; color: #475569; }
+.demo-crumb { margin: 0 0 10px; padding: 0 2px; font-size: var(--bo-fs-body); color: var(--bo-muted); }
 .demo-crumb[hidden] { display: none; }
-.demo-side, .demo-more, .demo-pagebar { font-family: inherit; }
+.demo-side, .demo-panel, .demo-more, .demo-pagebar, .bo-tip { font-family: inherit; }
 
 @media (min-width: 601px) {
-  /* Page shell: top bar across, sidebar on the left, content on the right. */
-  #appScreen:not([hidden]) { display: grid; grid-template-columns: var(--ds-w, 248px) minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); align-items: start; }
-  #appScreen.ds-collapsed:not([hidden]) { --ds-w: 68px; }
+  /* Page shell: top bar across, rail on the left, then the docked panel (wide screens only), then the content. */
+  #appScreen:not([hidden]) { display: grid; grid-template-columns: var(--bo-rail-w) minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); align-items: start; }
+  #appScreen.bo-docked:not([hidden]) { grid-template-columns: var(--bo-rail-w) var(--bo-panel-w) minmax(0, 1fr); }
   #appScreen > .topbar { grid-column: 1 / -1; grid-row: 1; }
   #appScreen > #licenseNotice { grid-column: 1 / -1; grid-row: 2; }
   #appScreen > nav.tabs { display: none !important; }
-  #appScreen > .demo-side { grid-column: 1; grid-row: 3; position: sticky; top: var(--ds-top, 0px); height: calc(100dvh - var(--ds-top, 0px)); }
+  #appScreen > .demo-side { grid-column: 1; grid-row: 3; position: sticky; top: var(--ds-top, 0px); height: calc(100dvh - var(--ds-top, 0px)); z-index: 30; }
+  #appScreen > .demo-panel.is-docked { grid-column: 2; grid-row: 3; position: sticky; top: var(--ds-top, 0px); height: calc(100dvh - var(--ds-top, 0px)); }
+  #appScreen > .demo-panel.is-overlay { position: fixed; left: var(--bo-rail-w); top: var(--ds-top, 0px); height: calc(100dvh - var(--ds-top, 0px)); z-index: 40; box-shadow: 8px 0 24px rgba(15, 23, 42, .18); }
   #appScreen > main { grid-column: 2; grid-row: 3; min-width: 0; }
+  #appScreen.bo-docked > main { grid-column: 3; }
   .close-operation-view, #suiteBack { display: none !important; }
   .demo-more, .demo-pagebar { display: none !important; }
 }
 
-.demo-side { background: #075985; color: #e0f2fe; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-.ds-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 10px 8px; display: grid; gap: 2px; align-content: start; }
-.ds-item, .ds-head, .ds-collapse { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: inherit; font: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; }
-.ds-item:hover, .ds-head:hover, .ds-collapse:hover { background: rgba(255, 255, 255, .12); }
-.ds-item:focus-visible, .ds-head:focus-visible, .ds-collapse:focus-visible { outline: 2px solid #7dd3fc; outline-offset: -2px; }
-.ds-item[aria-current="page"] { background: #fff; color: #075985; font-weight: 750; }
+/* Module rail */
+.bo-rail { width: var(--bo-rail-w); background: var(--bo-rail); color: #e0f2fe; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0; min-height: 0; overflow-x: hidden; overflow-y: auto; }
+.bo-mod { flex: none; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: var(--bo-radius-lg); background: transparent; color: inherit; cursor: pointer; }
+.bo-mod:hover { background: rgba(255, 255, 255, .14); }
+.bo-mod.is-shown { background: rgba(255, 255, 255, .24); color: #fff; }
+.bo-mod.is-current { background: #fff; color: var(--bo-rail); }
+.bo-mod:focus-visible { outline: 2px solid #7dd3fc; outline-offset: 2px; }
+.bo-mod.is-current:focus-visible { outline-color: #fff; outline-offset: 2px; }
 .ds-ico { flex: none; width: 22px; height: 22px; display: inline-grid; place-items: center; }
 .ds-ico svg { display: block; width: 22px; height: 22px; }
-.ds-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ds-head { color: #bae6fd; }
-.ds-head.has-active { color: #fff; }
-.ds-head .ds-chev { margin-left: auto; flex: none; transition: transform .15s ease; }
-.ds-head[aria-expanded="false"] .ds-chev { transform: rotate(-90deg); }
-.ds-sub { display: grid; gap: 1px; margin: 0 0 8px 20px; padding-left: 10px; border-left: 1px solid rgba(255, 255, 255, .22); }
-.ds-sub .ds-item { min-height: 36px; padding: 0 10px; font-size: 13px; font-weight: 550; white-space: normal; line-height: 1.25; }
-.ds-sub .ds-label { white-space: normal; }
-.ds-collapse { flex: none; margin: 0 8px 10px; width: calc(100% - 16px); color: #bae6fd; border-top: 1px solid rgba(255, 255, 255, .16); border-radius: 0 0 8px 8px; }
-.ds-collapsed .ds-label, .ds-collapsed .ds-chev, .ds-collapsed .ds-sub { display: none; }
-.ds-collapsed .ds-item, .ds-collapsed .ds-head, .ds-collapsed .ds-collapse { justify-content: center; padding: 0; }
-@media (prefers-reduced-motion: reduce) { .ds-head .ds-chev { transition: none; } }
+@media (pointer: coarse) { .bo-mod { width: 44px; height: 44px; } }
+/* The module's name, on hover and on keyboard focus. */
+.bo-tip { position: fixed; z-index: 150; transform: translateY(-50%); padding: 5px 10px; border-radius: var(--bo-radius); background: #0f172a; color: #fff; font-size: var(--bo-fs-small); font-weight: 600; white-space: nowrap; pointer-events: none; }
+.bo-tip[hidden] { display: none; }
+@media (hover: none) { .bo-tip { display: none; } }
+
+/* Section panel */
+.bo-panel { width: var(--bo-panel-w); display: flex; flex-direction: column; min-height: 0; background: var(--bo-panel); color: var(--bo-text); border-right: 1px solid var(--bo-border); font-size: var(--bo-fs-body); }
+.bo-panel[hidden] { display: none; }
+.bo-panel-head { flex: none; display: flex; align-items: center; gap: 2px; min-height: 48px; padding: 0 6px 0 16px; }
+.bo-panel-title { flex: 1; min-width: 0; font-size: var(--bo-fs-small); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--bo-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bo-panel-btn { flex: none; display: grid; place-items: center; width: var(--bo-link-h); height: var(--bo-link-h); padding: 0; border: 0; border-radius: var(--bo-radius); background: transparent; color: var(--bo-muted); cursor: pointer; }
+.bo-panel-btn:hover { background: rgba(15, 23, 42, .08); color: var(--bo-text); }
+.bo-panel-btn:focus-visible, .bo-item:focus-visible { outline: 2px solid var(--bo-primary); outline-offset: -2px; }
+.bo-panel-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 8px 16px; }
+.bo-panel-sec { margin: 16px 8px 4px; font-size: var(--bo-fs-heading); font-weight: 600; line-height: 1.3; color: var(--bo-text); }
+.bo-panel-sec:first-child { margin-top: 4px; }
+.bo-panel-list { display: grid; gap: 1px; }
+.bo-item { display: flex; align-items: center; width: 100%; min-height: var(--bo-item-h); padding: 6px 8px; border: 0; border-radius: var(--bo-radius); background: transparent; color: #334155; font: inherit; font-size: var(--bo-fs-body); font-weight: 400; line-height: 1.3; text-align: left; cursor: pointer; }
+.bo-item:hover:not(:disabled) { background: rgba(15, 23, 42, .06); }
+.bo-item:disabled { color: #94a3b8; cursor: default; }
+.bo-item[aria-current="page"] { background: var(--bo-surface); color: var(--bo-primary); font-weight: 600; }
+.bo-item-label { min-width: 0; overflow-wrap: anywhere; }
 
 /* Phone: More becomes its own screen. */
 @media (max-width: 600px) {
-  #demoSidebar, #demoCrumb { display: none !important; }
+  #demoSidebar, #demoPanel, #demoCrumb, #demoTip { display: none !important; }
   .close-operation-view, #suiteBack { display: none !important; }
   body.demo-more-page #appScreen > .topbar { display: none; }
   body.demo-more-open .mobile-cart-bar { display: none !important; }
@@ -115,10 +131,10 @@
   #appScreen #orderView .cart-grid-actions { grid-area: actions; }
 }
 
-/* Cashier mode: only the order screen, no sidebar. */
+/* Cashier mode: only the order screen, no rail and no panel. */
 @media (min-width: 601px) {
   #appScreen.ds-cashier:not([hidden]) { grid-template-columns: minmax(0, 1fr); }
-  #appScreen.ds-cashier > .demo-side { display: none; }
+  #appScreen.ds-cashier > .demo-side, #appScreen.ds-cashier > .demo-panel { display: none; }
   #appScreen.ds-cashier > main { grid-column: 1; }
 }
 .demo-backsale { min-height: 40px; margin-right: 10px; padding: 0 14px; border: 0; border-radius: 10px; background: #e0f2fe; color: #075985; font-weight: 700; cursor: pointer; }
@@ -126,14 +142,3 @@
 
 /* A dish has no stock count, so "Non-stock" on every tile is only noise. */
 #appScreen #orderView .product-card .stock.stock-service { display: none; }
-
-/* Icon rail: while the pointer is on it the whole sidebar slides out over the page and a group opens downwards in place. */
-.demo-side.ds-peek { width: 248px; z-index: 60; box-shadow: 8px 0 24px rgba(7, 89, 133, .35); }
-.ds-collapsed .ds-peek .ds-label, .ds-collapsed .ds-peek .ds-chev { display: block; }
-.ds-collapsed .ds-peek .ds-sub { display: grid; }
-.ds-collapsed .ds-peek .ds-scroll > .ds-item, .ds-collapsed .ds-peek .ds-head, .ds-collapsed .ds-peek .ds-collapse { justify-content: flex-start; padding: 0 12px; }
-.ds-collapsed .ds-peek .ds-sub .ds-item { justify-content: flex-start; padding: 0 10px; }
-.ds-collapsed .ds-head.has-active { background: rgba(255, 255, 255, .18); color: #fff; }
-.ds-sub.ds-drop { animation: dsDrop .16s ease-out; transform-origin: top; }
-@keyframes dsDrop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .ds-sub.ds-drop { animation: none; } }

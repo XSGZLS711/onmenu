@@ -26,6 +26,11 @@
     ['M01', 'Noodle (kg)', 8, 0, 4.5, true, 60], ['M02', 'Beef (kg)', 8, 0, 18, true, 25], ['M03', 'Chicken (kg)', 8, 0, 9.5, true, 30], ['M04', 'Pork (kg)', 8, 0, 11, true, 28],
     ['M05', 'Rice (kg)', 8, 0, 2.2, true, 90], ['M06', 'Eggs (each)', 8, 0, 0.55, true, 240], ['M07', 'Cooking oil (L)', 8, 0, 5.8, true, 20], ['M08', 'Flour (kg)', 8, 0, 1.9, true, 70]
   ];
+  // Specification text and the smaller unit a product can also be counted in (code -> [unit id, how many of it make one main unit]).
+  var SPECS = { N01: 'One bowl', N02: 'One bowl', N03: 'One bowl', N04: 'One plate', N05: 'One plate', N06: 'One bowl', R01: 'One plate', R02: 'One plate', R03: 'One plate', R04: 'One bowl', D01: '8 pieces', D02: '8 pieces', D03: '8 pieces',
+    S01: '4 rolls', S02: 'Small dish', S03: 'One egg', B01: '600 ml', B02: '600 ml', B03: '1 L', B04: '500 ml', F01: '25 per pack', F02: '25 per pack', G01: 'Takeaway', G02: 'Takeaway',
+    M01: 'Fresh, per kg', M02: 'Chilled, per kg', M03: 'Chilled, per kg', M04: 'Chilled, per kg', M05: 'Per kg', M06: 'Per egg', M07: 'Per litre', M08: 'Per kg' };
+  var SUBUNITS = { M01: [3, 1000], M02: [3, 1000], M03: [3, 1000], M04: [3, 1000], M05: [3, 1000], M07: [5, 1000], M08: [3, 1000] };
   // finished dish code -> list of [raw material code, quantity per portion in the material's own unit]
   var RECIPES = {
     N01: [['M01', 0.25], ['M02', 0.12]], N02: [['M01', 0.25], ['M03', 0.12]], N03: [['M01', 0.25], ['M04', 0.12]], N04: [['M01', 0.25], ['M02', 0.1], ['M07', 0.02]],
@@ -76,7 +81,8 @@
       PRODUCTS.forEach(function (p, i) {
         var id = i + 1;
         db.products.push({ productId: id, code: p[0], name: p[1], description: '', categoryId: p[2], departmentId: p[2] === 8 ? 2 : 1, measurementId: p[0].charAt(0) === 'M' ? (/\(kg\)/.test(p[1]) ? 2 : /\(L\)/.test(p[1]) ? 4 : 1) : 1,
-          price: p[3], cost: p[4], vat: p[2] !== 8, stockItem: !!p[5], supplierId: p[2] === 8 ? 2 : p[2] === 7 ? 3 : 1, active: true, weightItem: false, barcode: p[7] || '', imageUrl: '', menuNo: i < 20 ? i + 1 : null });
+          price: p[3], cost: p[4], vat: p[2] !== 8, stockItem: !!p[5], supplierId: p[2] === 8 ? 2 : p[2] === 7 ? 3 : 1, active: true, weightItem: false, barcode: p[7] || '', imageUrl: '', menuNo: i < 20 ? i + 1 : null,
+          spec: SPECS[p[0]] || '', subMeasurementId: SUBUNITS[p[0]] ? SUBUNITS[p[0]][0] : null, subRatio: SUBUNITS[p[0]] ? SUBUNITS[p[0]][1] : null });
         db.stock[1][id] = p[6] || 0;
         db.stock[2][id] = p[6] ? Math.round(p[6] * 0.4) : 0;
       });
@@ -87,7 +93,13 @@
       db.movements = [];
       db.session = { userId: 'u1' };
     },
-    migrate: function () {}
+    // A database saved by an earlier version has no specification or sub unit: fill them in once.
+    migrate: function (db) {
+      db.products.forEach(function (p) {
+        if (p.spec === undefined) p.spec = SPECS[p.code] || '';
+        if (p.subMeasurementId === undefined) { p.subMeasurementId = SUBUNITS[p.code] ? SUBUNITS[p.code][0] : null; p.subRatio = SUBUNITS[p.code] ? SUBUNITS[p.code][1] : null; }
+      });
+    }
   });
 
   // ---- helpers other modules use ----------------------------------------------------
@@ -139,7 +151,60 @@
     return { productId: p.productId, productCode: p.code, productName: p.name, description: p.description || '', unitPrice: p.price, stock: p.stockItem ? Api.stockOf(shopId, p.productId) : 0,
       uom: (Api.db.measurements.filter(function (m) { return m.id === p.measurementId; })[0] || {}).name || 'EACH', locationId: shopId, categoryId: p.categoryId, stockItem: p.stockItem,
       vatRate: p.vat ? Api.db.company.vat : 0, imageUrl: p.imageUrl || '', barcode: p.barcode || '', serviceVatRate: Api.db.company.vat, categoryName: cat && cat.name,
-      favourite: Api.isFavourite(shopId, p.productId), menuNo: p.menuNo || null };
+      favourite: Api.isFavourite(shopId, p.productId), menuNo: p.menuNo || null,
+      hasRecipe: Api.hasRecipe(p.productId), subUom: Api.unitName(p.subMeasurementId) };
+  };
+  Api.unitName = function (id) { return (Api.db.measurements.filter(function (m) { return m.id === Number(id); })[0] || {}).name || ''; };
+  Api.hasRecipe = function (productId) { var r = Api.db.recipes[productId]; return !!(r && r.length); };
+
+  // ---- list pages (backoffice-design-spec 4.1 and 7) -------------------------------------
+  // Every back-office list asks the same way: page, pageSize, sort (name, or -name for descending), q (text) and filter[key]=value.
+  // The answer is { page, pageSize, pages, total, rows, totals }; the footer line of the page is written from `totals`.
+  var collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+  Api.filtersOf = function (q) {
+    var f = {};
+    Object.keys(q).forEach(function (k) { var m = /^filter\[(.+)\]$/.exec(k); if (m && q[k] !== '') f[m[1]] = q[k]; });
+    return f;
+  };
+  // sorters: { key: function (row) -> number | string | null }. Empty values always sort last.
+  Api.sortRows = function (rows, sort, sorters) {
+    var desc = String(sort || '').charAt(0) === '-', key = String(sort || '').replace(/^-/, ''), get = sorters && sorters[key];
+    if (!get) return rows;
+    var keyed = rows.map(function (r, i) { return { r: r, i: i, v: get(r) }; });
+    keyed.sort(function (a, b) {
+      var x = a.v, y = b.v, empty = function (v) { return v === null || v === undefined || v === ''; };
+      if (empty(x) || empty(y)) return empty(x) && empty(y) ? a.i - b.i : empty(x) ? 1 : -1;
+      var c = typeof x === 'number' && typeof y === 'number' ? x - y : collator.compare(String(x), String(y));
+      return (desc ? -c : c) || a.i - b.i;
+    });
+    return keyed.map(function (k) { return k.r; });
+  };
+  Api.listPage = function (q, rows, sorters, totals) {
+    rows = Api.sortRows(rows, q.sort, sorters);
+    var size = Math.min(200, Math.max(1, Math.floor(Number(q.pageSize)) || 50)), total = rows.length, pages = Math.max(1, Math.ceil(total / size)), page = Math.min(pages, Math.max(1, Math.floor(Number(q.page)) || 1));
+    return { page: page, pageSize: size, pages: pages, total: total, rows: rows.slice((page - 1) * size, page * size), totals: totals ? totals(rows) : {} };
+  };
+  // CSV out and in. The file starts with a byte-order mark so a spreadsheet opens Chinese text correctly.
+  Api.csvText = function (headers, rows) {
+    var cell = function (v) { var t = v === null || v === undefined ? '' : String(v); return /[",\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+    return '\ufeff' + [headers].concat(rows).map(function (r) { return r.map(cell).join(','); }).join('\r\n') + '\r\n';
+  };
+  Api.csvResponse = function (fileName, text) {
+    return new Response(text, { status: 200, headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': 'attachment; filename="' + fileName + '"' } });
+  };
+  Api.parseCsv = function (text) {
+    var rows = [], row = [], cell = '', quoted = false, src = String(text || '').replace(/^\ufeff/, '');
+    for (var i = 0; i < src.length; i++) {
+      var c = src.charAt(i);
+      if (quoted) { if (c === '"') { if (src.charAt(i + 1) === '"') { cell += '"'; i++; } else quoted = false; } else cell += c; }
+      else if (c === '"') quoted = true;
+      else if (c === ',') { row.push(cell); cell = ''; }
+      else if (c === '\n' || c === '\r') { if (c === '\r' && src.charAt(i + 1) === '\n') i++; row.push(cell); cell = ''; if (row.some(function (v) { return v !== ''; })) rows.push(row); row = []; }
+      else cell += c;
+    }
+    row.push(cell);
+    if (row.some(function (v) { return v !== ''; })) rows.push(row);
+    return rows;
   };
 
   // ---- sign in and the opening data ----------------------------------------------

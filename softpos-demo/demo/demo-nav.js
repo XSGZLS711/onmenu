@@ -1,13 +1,14 @@
-// Navigation demo. Replaces the centred pop-up menus with:
-//   - a left sidebar on desktop and tablets (it collapses to an icon rail), and
+// Navigation demo (back-office shell, backoffice-design-spec.md section 2). Replaces the centred pop-up menus with:
+//   - a 56 px module rail (icons only) with a 184 px section panel beside it on desktop and tablets, and
 //   - a full-screen "More" with back navigation on phones.
-// It reads the existing buttons, permissions and handlers and clicks them, so no page logic is changed.
+// It reads the existing buttons, permissions and handlers and clicks them, so no page logic is changed. Pages that the demo adds
+// (DemoPages, demo-pages.js) are listed under their module next to the vendor's own.
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   var qa = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var phoneQuery = window.matchMedia('(max-width: 600px)');
-  var tabletQuery = window.matchMedia('(max-width: 1279px)'); // below this the sidebar starts as an icon rail, so the products keep their width
+  var wideQuery = window.matchMedia('(min-width: 1280px)'); // from here the panel is docked beside the rail; below it opens over the page
 
   var ICONS = {
     dashboard: '<path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z"/>',
@@ -18,7 +19,8 @@
     expense: '<path d="M4 4h16v16l-3-2-3 2-2-2-2 2-3-2-3 2V4Z"/><path d="M8 9h8M8 13h5"/>',
     reports: '<path d="M4 20V4M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/>',
     more: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
-    account: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>'
+    account: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
+    users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.7a3.5 3.5 0 0 1 0 6.6M18.5 14.8c1.7.7 2.8 2.3 3 5.2"/>'
   };
   function icon(name) {
     return '<span class="ds-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || ICONS.more) + '</svg></span>';
@@ -47,16 +49,19 @@
     { key: 'expense', btn: 'inventorySuiteBtn', list: '#inventoryMenuDialog .sales-more-actions button' },
     { key: 'reports', btn: 'reportsMenuBtn', list: '#reportMenuDialog .sales-more-actions button' }
   ];
-  // Groups follow the jobs: sell, look after customers, keep the product list, keep stock, buy, report, set up.
+  // Eight modules, in rail order: dashboard, sell, products, stock, buy, customers, report, set up. A module lists its pages in sections;
+  // a section without a label has no heading. The module keys are the ones a DemoPages page names in `module`.
   var LAYOUT = [
-    { key: 'home', label: ['Dashboard', '概览'], icon: 'dashboard', items: ['dashboardView'] },
-    { key: 'sales', label: ['Sales', '销售'], icon: 'sales', items: ['sales:retailSalesTab', 'sales:serviceSalesTab', 'quotesView'] },
-    { key: 'customers', label: ['Customers', '客户'], icon: 'wallet', items: ['sales:customerPaymentsTab', 'reports:statement', 'reports:aging'] },
-    { key: 'products', label: ['Products', '商品'], icon: 'products', items: ['stock:productsView'] },
-    { key: 'stock', label: ['Stock', '库存'], icon: 'stock', items: ['stock:stockView|stockAdjust', 'stock:suite-stocktake', 'stock:suite-transfers', 'stock:suite-bulk'] },
-    { key: 'purchasing', label: ['Purchasing', '采购'], icon: 'cart', items: ['stock:stockView', 'expense:suite-purchases'] },
-    { key: 'reports', label: ['Reports', '报表'], icon: 'reports', items: ['reports:sales', 'reports:productsales', 'reports:productshopsales', 'reports:closing', 'reports:stock'] },
-    { key: 'setup', label: ['Setup', '设置'], icon: 'gear', items: ['reports:suite-pricing', 'reports:suite-integration', 'setup:system'] }
+    { key: 'dashboard', label: ['Dashboard', '概览'], icon: 'dashboard', sections: [{ items: ['dashboardView'] }] },
+    { key: 'sales', label: ['Sales', '销售'], icon: 'sales', sections: [{ items: ['sales:retailSalesTab', 'sales:serviceSalesTab', 'quotesView'] }] },
+    { key: 'products', label: ['Products', '商品'], icon: 'products', sections: [{ items: ['stock:productsView'] }] },
+    { key: 'stock', label: ['Stock', '库存'], icon: 'stock', sections: [
+      { label: ['Count and adjust', '盘点与调整'], items: ['stock:stockView|stockAdjust', 'stock:suite-stocktake'] },
+      { label: ['Move stock', '调拨'], items: ['stock:suite-transfers', 'stock:suite-bulk'] }] },
+    { key: 'purchasing', label: ['Purchasing', '采购'], icon: 'cart', sections: [{ items: ['stock:stockView', 'expense:suite-purchases'] }] },
+    { key: 'customers', label: ['Customers', '客户'], icon: 'users', sections: [{ items: ['sales:customerPaymentsTab', 'reports:statement', 'reports:aging'] }] },
+    { key: 'reports', label: ['Reports', '报表'], icon: 'reports', sections: [{ items: ['reports:sales', 'reports:productsales', 'reports:productshopsales', 'reports:closing', 'reports:stock'] }] },
+    { key: 'setup', label: ['Setup', '设置'], icon: 'gear', sections: [{ items: ['reports:suite-pricing', 'reports:suite-integration', 'setup:system'] }] }
   ];
   var OTHER = { key: 'other', label: ['More', '其他'], icon: 'more' };
   // Shorter names for the sidebar. The pages keep their own titles.
@@ -68,6 +73,9 @@
     'reports:productshopsales': ['Product sales by shop', '分店商品销售'], 'reports:closing': ['Closing report', '结账报表'], 'reports:stock': ['Stock reports', '库存报表'],
     'reports:suite-pricing': ['Pricing & promotions', '定价与促销'], 'reports:suite-integration': ['Accounting link', '会计对接'], 'setup:system': ['System setting', '系统设置']
   };
+  // The sale screen keeps the whole width for the products, so the docked panel steps aside there.
+  var SALE_KEYS = { 'sales:retailSalesTab': 1 };
+  var VENDOR_PRODUCTS = 'stock:productsView', BO_PRODUCTS = 'bo:products';
   function pick(pair) { return isZh() ? pair[1] : pair[0]; }
   function readRaw() {
     var raw = [];
@@ -85,22 +93,71 @@
     if (admin && !admin.hidden) raw.push({ type: 'leaf', key: 'setup:system', label: text(admin) || 'System Setting', source: { click: function () { openAdmin(); } } });
     return raw;
   }
-  function readMenu() {
-    var raw = readRaw(), used = {}, out = [];
-    function build(g, keys) {
-      var group = { key: g.key, label: pick(g.label), icon: g.icon };
-      var items = keys.map(function (k) { return raw.filter(function (r) { return r.key === k; })[0]; }).filter(Boolean).map(function (r) {
-        used[r.key] = 1;
-        return { type: 'leaf', key: r.key, group: g.key === 'home' ? null : group, label: NAMES[r.key] ? pick(NAMES[r.key]) : r.label, source: r.source, disabled: r.disabled };
+
+  // ---- pages the demo adds (demo-pages.js) --------------------------------------------------------------
+  var opening = false; // true while DemoPages.open runs, so closing "the previous page" never closes the one being opened
+  function registeredPages() { return window.DemoPages && Array.isArray(DemoPages.list) ? DemoPages.list : []; }
+  // Showing a page of the demo takes the place of whichever vendor view is on screen, whoever asks: a sidebar click, another page or the console.
+  // The wrapper also tells activateTab (below) that the next change of view is this one, so the page is not closed again at once.
+  if (window.DemoPages && DemoPages.open && !DemoPages.open.byShell) {
+    var baseOpen = DemoPages.open;
+    DemoPages.open = function (key) {
+      if (!this.get(key)) return false;
+      qa('.view.active-view').forEach(function (v) { v.classList.remove('active-view'); });
+      var was = opening;
+      opening = true;
+      try { return baseOpen.call(this, key); } finally { opening = was; }
+    };
+    DemoPages.open.byShell = true;
+  }
+  function openRegistered(key) { DemoPages.open(key); }
+  function closeRegistered() { if (window.DemoPages && DemoPages.current && DemoPages.current()) DemoPages.closeAll(); }
+
+  // Every module that has at least one page: { key, label, icon, items (flat), sections: [{ label, items }] }.
+  // An added page is listed when the person can see a vendor page of the same module, so permissions keep working for it too.
+  function readModules() {
+    var raw = readRaw(), used = {}, mods = [], pages = registeredPages(), known = {};
+    var replaced = !!(window.DemoPages && DemoPages.get && DemoPages.get(BO_PRODUCTS)); // the new Products list takes the vendor Products page's place
+    function build(g, layout, added, needVendor) {
+      var info = { key: g.key, label: pick(g.label), icon: g.icon }, group = g.key === 'dashboard' ? null : info, seen = false;
+      var sections = layout.map(function (s) {
+        var items = [];
+        s.items.forEach(function (k) {
+          var r = raw.filter(function (x) { return x.key === k; })[0];
+          if (!r) return;
+          used[k] = 1; seen = true;
+          if (k === VENDOR_PRODUCTS && replaced) return;
+          items.push({ type: 'leaf', key: k, group: group, label: NAMES[k] ? pick(NAMES[k]) : r.label, source: r.source, disabled: r.disabled });
+        });
+        return { label: s.label ? pick(s.label) : '', items: items };
       });
-      if (!items.length) return;
-      // One page in a group is just a link: one click instead of two.
-      if (items.length === 1) out.push(Object.assign({}, items[0], { icon: g.icon }));
-      else out.push({ type: 'group', key: g.key, label: group.label, icon: g.icon, items: items });
+      added = added.map(function (p) {
+        return { type: 'leaf', key: p.key, group: group, label: pick(p.label), source: { click: function () { openRegistered(p.key); } }, registered: true };
+      });
+      if (added.length && (seen || !needVendor)) {
+        if (sections.length && !sections[0].label) sections[0].items = added.concat(sections[0].items); else sections.unshift({ label: '', items: added });
+      }
+      sections = sections.filter(function (s) { return s.items.length; });
+      var items = [];
+      sections.forEach(function (s) { items = items.concat(s.items); });
+      if (items.length) mods.push({ key: g.key, label: info.label, icon: g.icon, items: items, sections: sections });
     }
-    LAYOUT.forEach(function (g) { build(g, g.items); });
-    build(OTHER, raw.filter(function (r) { return !used[r.key]; }).map(function (r) { return r.key; }));
-    return out;
+    LAYOUT.forEach(function (g) {
+      known[g.key] = 1;
+      build(g, g.sections, pages.filter(function (p) { return p.module === g.key; }), true);
+    });
+    // Vendor pages nobody placed, and added pages naming an unknown module, still show, under More.
+    var rest = raw.filter(function (r) { return !used[r.key]; }).map(function (r) { return r.key; });
+    var extra = pages.filter(function (p) { return !known[p.module]; });
+    if (rest.length || extra.length) build(OTHER, [{ items: rest }], extra, false);
+    return mods;
+  }
+  // The flat shape other scripts rely on (Ctrl+K, the phone More screen, cashier mode): a module with one page is that page, otherwise a group.
+  function readMenu() {
+    return readModules().map(function (m) {
+      if (m.items.length === 1) return Object.assign({}, m.items[0], { icon: m.icon });
+      return { type: 'group', key: m.key, label: m.label, icon: m.icon, items: m.items };
+    });
   }
   function readSalesActions() {
     return qa('#salesMoreActions button').filter(function (b) { return !b.hidden && !b.dataset.demoTool; }).map(function (b) {
@@ -111,13 +168,15 @@
   // ---- shared state -----------------------------------------------------------
   var activeKey = 'sales:retailSalesTab';
   var crumbParts = [];
-  var openKey = null;      // the one group the user opened by hand; null = follow the current page
+  var browse = null;       // module whose pages the panel shows when that is not the module holding the current page
+  var overlay = false;     // the panel is open over the page (narrow screens, the sale screen, or after the user closed the docked panel)
   var navigating = false;  // true while a sidebar click runs the vendor handlers
   function setActive(item) {
     activeKey = item.key;
     crumbParts = item.group && item.type !== 'group' && item.group.label !== item.label ? [item.group.label, item.label] : [item.label];
     if (item.key === 'sales:retailSalesTab') crumbParts = [];
-    openKey = null;
+    browse = null;
+    overlay = false;
   }
   function toastMessage(message) { if (typeof toast === 'function') toast(message, false); }
   // Run a menu entry the way a click on it would, and keep the highlight on it. Some vendor handlers call activateTab() on the way
@@ -128,95 +187,135 @@
     if (item.key !== 'setup:system') closeAdmin();
     setActive(item);
     navigating = true;
-    try { item.source.click(); } finally { navigating = false; }
+    try {
+      // Whatever was open from the registry closes first; a registered page closes the previous one itself.
+      if (!item.registered) closeRegistered();
+      item.source.click();
+    } finally { navigating = false; }
     renderSidebar();
   }
+  // A page of the demo can be opened from anywhere (DemoPages.open): the highlight follows it.
+  function onPages() {
+    var key = window.DemoPages && DemoPages.current ? DemoPages.current() : null;
+    if (key && key !== activeKey) { var item = findItem(key); if (item) setActive(item); }
+    schedule();
+  }
 
-  // ---- desktop and tablet: sidebar --------------------------------------------
+  // ---- desktop and tablet: module rail and section panel ------------------------------------
+  // The rail (56 px, icons only) holds the eight modules. The panel (184 px) lists the pages of one module. From 1280 px up the panel is
+  // docked beside the rail and stays open, until the user closes it (the choice is remembered). Narrower, or after it was closed, it
+  // opens over the page when a module is clicked. The sale screens never dock it, so the products keep their width.
   var side = document.createElement('nav');
   side.id = 'demoSidebar';
-  side.className = 'demo-side';
+  side.className = 'demo-side bo-rail';
   side.setAttribute('aria-label', tt('SoftPOS modules'));
+  var panel = document.createElement('nav');
+  panel.id = 'demoPanel';
+  panel.className = 'demo-panel bo-panel';
+  panel.hidden = true;
+  var tip = document.createElement('div');
+  tip.id = 'demoTip';
+  tip.className = 'bo-tip';
+  tip.setAttribute('role', 'tooltip');
+  tip.hidden = true;
   var crumb = document.createElement('p');
   crumb.id = 'demoCrumb';
   crumb.className = 'demo-crumb';
   crumb.hidden = true;
-  var userPref = null;
-  try { userPref = localStorage.getItem('demo.sidebar'); } catch (e) { /* storage may be blocked */ }
+  var panelPref = 'open';
+  try { if (localStorage.getItem('demo.panel') === 'closed') panelPref = 'closed'; } catch (e) { /* storage may be blocked */ }
+  function savePanelPref() { try { localStorage.setItem('demo.panel', panelPref); } catch (e) { /* ignore */ } }
 
-  function collapsed() { return userPref ? userPref === 'collapsed' : tabletQuery.matches; }
-  // One group is open at a time, so the whole list always fits on screen: the one the user opened, else the one holding the current page.
-  function groupOpen(m) {
-    if (openKey === '') return false;
-    if (openKey) return m.key === openKey;
-    return m.items.some(function (i) { return i.key === activeKey; });
+  function isCashierApp() { var app = $('appScreen'); return !!app && app.classList.contains('ds-cashier'); }
+  function canDock() { return wideQuery.matches && !phoneQuery.matches && panelPref === 'open' && !SALE_KEYS[activeKey] && !isCashierApp(); }
+  function moduleOf(mods, key) { return mods.filter(function (m) { return m.items.some(function (i) { return i.key === key; }); })[0] || null; }
+  // The module the panel shows: the one being browsed, else the one holding the current page.
+  function panelModule(mods) {
+    var browsed = browse ? mods.filter(function (m) { return m.key === browse; })[0] : null;
+    return browsed || moduleOf(mods, activeKey) || mods[0] || null;
   }
-  function itemHtml(i, sub) {
-    return '<button type="button" class="ds-item" data-ds="' + esc(i.key) + '"' + (activeKey === i.key ? ' aria-current="page"' : '') + (i.disabled ? ' disabled' : '') + ' title="' + esc(i.label) + '">' +
-      (sub ? '' : icon(i.icon)) + '<span class="ds-label">' + esc(i.label) + '</span></button>';
+  function itemHtml(i) {
+    return '<button type="button" class="bo-item" data-ds="' + esc(i.key) + '"' + (activeKey === i.key ? ' aria-current="page"' : '') + (i.disabled ? ' disabled' : '') + '><span class="bo-item-label">' + esc(i.label) + '</span></button>';
   }
+  var SVG_CLOSE = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  var SVG_PIN = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M6 2h4l-.6 4L12 8.6H4L6.6 6 6 2ZM8 8.6V14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/></svg>';
 
+  var lastRail = '', lastPanel = '';
+  function focusSelector() {
+    var a = document.activeElement;
+    if (!a || !(side.contains(a) || panel.contains(a))) return '';
+    if (a.dataset.dsMod) return '[data-ds-mod="' + a.dataset.dsMod + '"]';
+    if (a.dataset.ds) return '[data-ds="' + a.dataset.ds + '"]';
+    if (a.dataset.dsClose !== undefined) return '[data-ds-close]';
+    if (a.dataset.dsPin !== undefined) return '[data-ds-pin]';
+    return '';
+  }
   function renderSidebar() {
     var app = $('appScreen');
     if (!app) return;
-    var isCollapsed = collapsed();
-    app.classList.toggle('ds-collapsed', isCollapsed);
-    var html = '<div class="ds-scroll">';
-    readMenu().forEach(function (m) {
-      if (m.type === 'leaf') { html += itemHtml(m, false); return; }
-      var hasActive = m.items.some(function (i) { return i.key === activeKey; });
-      var open = groupOpen(m);
-      html += '<div class="ds-group"><button type="button" class="ds-head' + (hasActive ? ' has-active' : '') + '" data-ds-group="' + m.key + '" aria-expanded="' + open + '" title="' + esc(m.label) + '">' +
-        icon(m.icon) + '<span class="ds-label">' + esc(m.label) + '</span><svg class="ds-chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>';
-      if (open) html += '<div class="ds-sub' + (dropKey === m.key ? ' ds-drop' : '') + '">' + m.items.map(function (i) { return itemHtml(i, true); }).join('') + '</div>';
-      html += '</div>';
-    });
-    var label = isCollapsed ? tt('Expand the sidebar') : tt('Collapse to icons');
-    html += '</div><button type="button" class="ds-collapse" aria-pressed="' + isCollapsed + '" title="' + esc(label) + '" aria-label="' + esc(label) + '">' +
-      '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="' + (isCollapsed ? 'm6 3 5 5-5 5' : 'm10 3-5 5 5 5') + '" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span class="ds-label">' + esc(isCollapsed ? tt('Pin open') : tt('Collapse')) + '</span></button>';
-    side.innerHTML = html;
-    dropKey = null;
-    if (!isCollapsed) setPeek(false);
+    var mods = readModules(), cur = moduleOf(mods, activeKey), shown = panelModule(mods);
+    var docked = !!shown && canDock();
+    if (docked) overlay = false;
+    var showPanel = !!shown && (docked || overlay);
+    app.classList.toggle('bo-docked', showPanel && docked);
+
+    var rail = mods.map(function (m) {
+      var multi = m.items.length > 1, isCur = !!cur && cur.key === m.key, isShown = showPanel && shown.key === m.key;
+      return '<button type="button" class="bo-mod' + (isCur ? ' is-current' : isShown ? ' is-shown' : '') + '" data-ds-mod="' + esc(m.key) + '" aria-label="' + esc(m.label) + '"' +
+        (isCur ? ' aria-current="true"' : '') + (multi ? ' aria-expanded="' + isShown + '" aria-controls="demoPanel"' : '') + '>' + icon(m.icon) + '</button>';
+    }).join('');
+    var body = '';
+    if (showPanel) {
+      var pin = !docked && wideQuery.matches && panelPref === 'closed' ? '<button type="button" class="bo-panel-btn" data-ds-pin title="' + esc(tt('Keep the panel open')) + '" aria-label="' + esc(tt('Keep the panel open')) + '">' + SVG_PIN + '</button>' : '';
+      body = '<div class="bo-panel-head"><span class="bo-panel-title">' + esc(shown.label) + '</span>' + pin +
+        '<button type="button" class="bo-panel-btn" data-ds-close title="' + esc(tt('Close panel')) + '" aria-label="' + esc(tt('Close panel')) + '">' + SVG_CLOSE + '</button></div>' +
+        '<div class="bo-panel-body">' + shown.sections.map(function (s) {
+          return (s.label ? '<h3 class="bo-panel-sec">' + esc(s.label) + '</h3>' : '') + '<div class="bo-panel-list">' + s.items.map(itemHtml).join('') + '</div>';
+        }).join('') + '</div>';
+    }
+
+    var focus = focusSelector(), changed = false;
+    if (rail !== lastRail) { lastRail = rail; side.innerHTML = rail; changed = true; }
+    var paintKey = (docked ? 'docked' : 'over') + (showPanel ? shown.label : '') + body;
+    if (paintKey !== lastPanel) {
+      lastPanel = paintKey;
+      panel.innerHTML = body;
+      panel.classList.toggle('is-docked', docked);
+      panel.classList.toggle('is-overlay', !docked);
+      if (showPanel) panel.setAttribute('aria-label', shown.label); else panel.removeAttribute('aria-label');
+      changed = true;
+    }
+    if (panel.hidden === showPanel) panel.hidden = !showPanel;
+    if (changed && focus) {
+      var again = side.querySelector(focus) || panel.querySelector(focus);
+      if (again) again.focus({ preventScroll: true });
+    }
     renderCrumb();
     placeSidebar();
   }
 
-  // In the icon rail the whole sidebar slides out over the page while the pointer is on it, so the names can be read, and a group opens
-  // downwards in place. Touch has no hover: the first tap on the rail slides it out, the next tap acts.
-  var peek = false, peekTimer = 0, pointerKind = 'mouse', dropKey = null;
-  function setPeek(on) {
-    clearTimeout(peekTimer);
-    on = !!on && collapsed();
-    if (peek === on) return;
-    peek = on;
-    side.classList.toggle('ds-peek', on);
-  }
-  side.addEventListener('pointerdown', function (event) { pointerKind = event.pointerType || 'mouse'; }, true);
-  side.addEventListener('mouseenter', function () { if (collapsed()) setPeek(true); });
-  side.addEventListener('mouseleave', function () { clearTimeout(peekTimer); peekTimer = setTimeout(function () { setPeek(false); }, 160); });
-  side.addEventListener('focusin', function () { if (collapsed() && side.querySelector(':focus-visible')) setPeek(true); });
-  side.addEventListener('focusout', function (event) { if (!side.contains(event.relatedTarget) && !side.matches(':hover')) setPeek(false); });
-  document.addEventListener('pointerdown', function (event) { if (peek && !side.contains(event.target)) setPeek(false); });
-  document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && peek) setPeek(false); });
-
   function renderCrumb() {
     var parts = crumbParts.slice();
-    crumb.hidden = !parts.length;
+    var want = !parts.length;
+    if (crumb.hidden !== want) crumb.hidden = want;
     var app = $('appScreen');
     if (app && app.classList.contains('ds-cashier') && parts.length) {
       // With no sidebar, the way back to the sale screen is right above the page.
       crumb.innerHTML = '<button type="button" class="demo-backsale" data-back-sale>‹ ' + esc(tt('Retail Sales')) + '</button><span>' + esc(parts.join(' › ')) + '</span>';
-    } else crumb.textContent = parts.join(' › ');
+    } else if (crumb.textContent !== parts.join(' › ') || crumb.firstElementChild) crumb.textContent = parts.join(' › ');
   }
   crumb.addEventListener('click', function (event) {
     if (!event.target.closest('[data-back-sale]')) return;
     go(findItem('sales:retailSalesTab'));
   });
+  // The rail and the panel start below the top bar. When the top bar scrolls away (it only sticks on wide screens) they move up with it.
+  var lastTop = -1, frame = 0;
   function placeSidebar() {
-    var top = document.querySelector('#appScreen > .topbar');
-    var notice = $('licenseNotice');
-    var h = (top ? top.getBoundingClientRect().height : 0) + (notice && !notice.hidden ? notice.getBoundingClientRect().height : 0);
-    document.documentElement.style.setProperty('--ds-top', Math.round(h) + 'px');
+    var top = document.querySelector('#appScreen > .topbar'), notice = $('licenseNotice');
+    var rect = top ? top.getBoundingClientRect() : { height: 0, bottom: 0 };
+    var h = top && getComputedStyle(top).position === 'sticky' ? rect.height : Math.max(0, notice && !notice.hidden ? notice.getBoundingClientRect().bottom : rect.bottom);
+    h = Math.round(h);
+    if (h !== lastTop) { lastTop = h; document.documentElement.style.setProperty('--ds-top', h + 'px'); }
   }
   function findItem(key) {
     var found = null;
@@ -226,37 +325,110 @@
     });
     return found;
   }
-  side.addEventListener('click', function (event) {
-    var head = event.target.closest('[data-ds-group]');
-    var item = event.target.closest('[data-ds]');
-    var toggle = event.target.closest('.ds-collapse');
-    if (toggle) {
-      userPref = collapsed() ? 'expanded' : 'collapsed';
-      try { localStorage.setItem('demo.sidebar', userPref); } catch (e) { /* ignore */ }
-      setPeek(false);
-      renderSidebar();
-      return;
-    }
-    if (collapsed() && !peek && pointerKind !== 'mouse') { setPeek(true); return; }
-    if (head) {
-      var key = head.dataset.dsGroup, opening = !groupOpen(readMenu().filter(function (x) { return x.key === key; })[0] || { key: key, items: [] });
-      openKey = opening ? key : '';
-      dropKey = opening ? key : null;
-      renderSidebar();
-      return;
-    }
-    if (item) { setPeek(false); go(findItem(item.dataset.ds)); }
-  });
 
-  // Close buttons are not needed once every page is one click away.
+  function closeOverlay(refocus) {
+    if (!overlay) return;
+    var shown = panelModule(readModules());
+    overlay = false;
+    browse = null;
+    renderSidebar();
+    if (refocus && shown) { var b = side.querySelector('[data-ds-mod="' + shown.key + '"]'); if (b) b.focus(); }
+  }
+  function focusPanelItem() {
+    var el = panel.querySelector('.bo-item[aria-current="page"]') || panel.querySelector('.bo-item:not([disabled])');
+    if (el) el.focus();
+  }
+  function clickModule(key, event) {
+    var mods = readModules(), m = mods.filter(function (x) { return x.key === key; })[0];
+    if (!m) return;
+    hideTip();
+    // One page in a module is just a link: one click instead of two.
+    if (m.items.length === 1) { go(m.items[0]); return; }
+    var shown = panelModule(mods), docked = canDock(), keyboard = !!event && event.detail === 0;
+    if ((docked || overlay) && shown && shown.key === key) {
+      if (!docked) closeOverlay(false);
+      return;
+    }
+    browse = key;
+    if (!docked) overlay = true;
+    renderSidebar();
+    if (keyboard) focusPanelItem();
+  }
+  function closePanelButton() {
+    if (!canDock()) { closeOverlay(true); return; }
+    // The docked panel was closed on purpose: remember it, and from now on it opens over the page.
+    panelPref = 'closed';
+    savePanelPref();
+    var cur = moduleOf(readModules(), activeKey);
+    browse = null;
+    renderSidebar();
+    var b = cur && side.querySelector('[data-ds-mod="' + cur.key + '"]');
+    if (b) b.focus();
+  }
+  function pinPanel() {
+    panelPref = 'open';
+    savePanelPref();
+    overlay = false;
+    browse = null;
+    renderSidebar();
+  }
+  function showTip(btn) {
+    if (overlay) return; // the open panel already names its module and covers the spot
+    var r = btn.getBoundingClientRect();
+    tip.textContent = btn.getAttribute('aria-label') || '';
+    tip.style.left = Math.round(r.right + 8) + 'px';
+    tip.style.top = Math.round(r.top + r.height / 2) + 'px';
+    tip.hidden = false;
+  }
+  function hideTip() { if (!tip.hidden) tip.hidden = true; }
+  function arrowKeys(event, box, selector) {
+    if (!/^(ArrowUp|ArrowDown|Home|End)$/.test(event.key)) return;
+    var list = qa(selector, box).filter(function (b) { return !b.disabled; }), at = list.indexOf(document.activeElement);
+    if (at < 0) return;
+    event.preventDefault();
+    var next = event.key === 'Home' ? 0 : event.key === 'End' ? list.length - 1 : (at + (event.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length;
+    list[next].focus();
+  }
+
+  side.addEventListener('click', function (event) {
+    var b = event.target.closest('[data-ds-mod]');
+    if (b) clickModule(b.dataset.dsMod, event);
+  });
+  panel.addEventListener('click', function (event) {
+    if (event.target.closest('[data-ds-close]')) { closePanelButton(); return; }
+    if (event.target.closest('[data-ds-pin]')) { pinPanel(); return; }
+    var b = event.target.closest('[data-ds]');
+    if (b) go(findItem(b.dataset.ds));
+  });
+  side.addEventListener('keydown', function (event) { arrowKeys(event, side, '.bo-mod'); });
+  panel.addEventListener('keydown', function (event) { arrowKeys(event, panel, '.bo-panel-btn, .bo-item'); });
+  // The module name shows on hover and on keyboard focus (touch screens have the panel's own heading instead).
+  side.addEventListener('mouseover', function (event) { var b = event.target.closest('.bo-mod'); if (b) showTip(b); });
+  side.addEventListener('mouseout', function (event) { if (event.target.closest('.bo-mod')) hideTip(); });
+  side.addEventListener('focusin', function (event) { var b = event.target.closest('.bo-mod'); if (b && b.matches(':focus-visible')) showTip(b); });
+  side.addEventListener('focusout', hideTip);
+  document.addEventListener('pointerdown', function (event) {
+    if (overlay && !panel.contains(event.target) && !side.contains(event.target)) closeOverlay(false);
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape' || !overlay || document.querySelector('dialog[open]')) return;
+    var palette = $('demoPalette');
+    if (palette && !palette.hidden) return;
+    closeOverlay(side.contains(document.activeElement) || panel.contains(document.activeElement) || document.activeElement === document.body);
+  });
+  window.addEventListener('scroll', function () { if (!frame) frame = requestAnimationFrame(function () { frame = 0; placeSidebar(); }); }, { passive: true });
+
   function mountDesktop() {
     var app = $('appScreen');
     if (!app || side.parentNode === app) return;
     var tabs = app.querySelector(':scope > nav.tabs');
     if (tabs) tabs.after(side); else app.appendChild(side);
+    side.after(panel);
+    document.body.appendChild(tip);
     var main = app.querySelector(':scope > main');
     if (main) main.insertBefore(crumb, main.firstChild);
   }
+
 
   // ---- phone: a full-screen More with back navigation -----------------------------
   var more = document.createElement('section');
@@ -303,7 +475,7 @@
     [/dashboard|概览/, 'dashboard'], [/refund|退款/, 'refund'], [/layby|预订/, 'layby'], [/x ?\/ ?z|日结/, 'clock'],
     [/reprint|recentsales|receipt|till|draft bill|print|小票|打印|重打|重印|收据/, 'printer'], [/sales rep|salesrep|销售员|销售代表/, 'account'], [/note|备注/, 'note'],
     [/quotation|quote|报价/, 'quotation'], [/service|服务/, 'wrench'], [/customer payment|客户付款/, 'wallet'],
-    [/product management|商品管理/, 'stock'], [/purchas|po &|采购/, 'cart'], [/transfer|调拨/, 'truck'], [/adjust|调整/, 'sliders'],
+    [/product management|商品管理/, 'stock'], [/stock:productsview/, 'products'], [/purchas|po &|采购/, 'cart'], [/transfer|调拨/, 'truck'], [/adjust|调整/, 'sliders'],
     [/stocktake|盘点/, 'clipboard'], [/price break|pricing|promotion|happy|阶梯|促销/, 'tag'], [/myob|xero|quickbooks|accounting/, 'link'],
     [/aging|账龄/, 'clock'], [/statement|对账/, 'quotation'], [/report|报表/, 'reports']
   ];
@@ -337,11 +509,11 @@
       if (x.type === 'leaf') {
         if (x.key === 'sales:retailSalesTab' || x.key === 'setup:system') return; // the bottom bar has the sale screen, Account has System Setting
         if (x.key === 'dashboardView') { put('reports', { id: 'leaf:' + x.key, label: x.label, icon: 'dashboard' }, true); return; }
-        put(x.group ? x.group.key : 'other', { id: 'leaf:' + x.key, label: x.label });
+        put(x.group ? x.group.key : 'other', { id: 'leaf:' + x.key, label: x.label, icon: x.registered ? x.icon : undefined });
       } else {
         x.items.forEach(function (i) {
           if (i.key === 'sales:retailSalesTab' || i.key === 'setup:system') return;
-          put(x.key, { id: 'item:' + i.key, label: i.label, disabled: i.disabled });
+          put(x.key, { id: 'item:' + i.key, label: i.label, disabled: i.disabled, icon: i.registered ? x.icon : undefined });
         });
       }
     });
@@ -480,6 +652,8 @@
   var baseActivate = typeof activateTab === 'function' ? activateTab : null;
   if (baseActivate) {
     activateTab = function (id) {
+      // Any vendor page that opens (the bottom bar, a shortcut, a button in a page) closes the demo page that was on screen.
+      if (!opening) closeRegistered();
       baseActivate(id);
       if (id === 'orderView' && !navigating) { activeKey = 'sales:retailSalesTab'; crumbParts = []; if (!phoneQuery.matches) renderSidebar(); }
     };
@@ -611,7 +785,8 @@
     renderSidebar();
     new MutationObserver(schedule).observe($('appScreen'), { subtree: true, attributes: true, attributeFilter: ['hidden', 'disabled'] });
     window.addEventListener('resize', function () { placeSidebar(); if (!phoneQuery.matches && (m.open || m.page)) leaveMore(); });
-    tabletQuery.addEventListener('change', schedule);
+    wideQuery.addEventListener('change', function () { overlay = false; browse = null; schedule(); });
+    document.addEventListener('demopages', onPages);
     document.addEventListener('softpos:languagechange', function () {
       side.setAttribute('aria-label', tt('SoftPOS modules'));
       more.setAttribute('aria-label', tt('More'));
