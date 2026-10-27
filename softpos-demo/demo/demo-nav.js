@@ -165,65 +165,39 @@
     readMenu().forEach(function (m) {
       if (m.type === 'leaf') { html += itemHtml(m, false); return; }
       var hasActive = m.items.some(function (i) { return i.key === activeKey; });
-      if (isCollapsed) {
-        html += '<button type="button" class="ds-head' + (hasActive ? ' has-active' : '') + '" data-ds-group="' + m.key + '" aria-haspopup="menu" aria-expanded="' + (fly.group === m.key) + '" title="' + esc(m.label) + '">' + icon(m.icon) + '<span class="ds-label">' + esc(m.label) + '</span></button>';
-        return;
-      }
       var open = groupOpen(m);
       html += '<div class="ds-group"><button type="button" class="ds-head' + (hasActive ? ' has-active' : '') + '" data-ds-group="' + m.key + '" aria-expanded="' + open + '" title="' + esc(m.label) + '">' +
         icon(m.icon) + '<span class="ds-label">' + esc(m.label) + '</span><svg class="ds-chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>';
-      if (open) html += '<div class="ds-sub">' + m.items.map(function (i) { return itemHtml(i, true); }).join('') + '</div>';
+      if (open) html += '<div class="ds-sub' + (dropKey === m.key ? ' ds-drop' : '') + '">' + m.items.map(function (i) { return itemHtml(i, true); }).join('') + '</div>';
       html += '</div>';
     });
     var label = isCollapsed ? tt('Expand the sidebar') : tt('Collapse to icons');
     html += '</div><button type="button" class="ds-collapse" aria-pressed="' + isCollapsed + '" title="' + esc(label) + '" aria-label="' + esc(label) + '">' +
-      '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="' + (isCollapsed ? 'm6 3 5 5-5 5' : 'm10 3-5 5 5 5') + '" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span class="ds-label">' + esc(tt('Collapse')) + '</span></button>';
+      '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="' + (isCollapsed ? 'm6 3 5 5-5 5' : 'm10 3-5 5 5 5') + '" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span class="ds-label">' + esc(isCollapsed ? tt('Pin open') : tt('Collapse')) + '</span></button>';
     side.innerHTML = html;
-    if (fly.group) { if (isCollapsed) paintFly(); else closeFly(); }
+    dropKey = null;
+    if (!isCollapsed) setPeek(false);
     renderCrumb();
     placeSidebar();
   }
 
-  // In the icon rail a group opens a small panel beside the rail, so every page stays one click away without widening the sidebar.
-  var fly = { el: null, group: null };
-  function ensureFly() {
-    if (fly.el) return fly.el;
-    fly.el = document.createElement('div');
-    fly.el.id = 'demoFly'; fly.el.className = 'ds-fly'; fly.el.setAttribute('role', 'menu'); fly.el.hidden = true;
-    document.body.appendChild(fly.el);
-    fly.el.addEventListener('click', function (event) {
-      var b = event.target.closest('[data-ds]');
-      if (!b) return;
-      var target = findItem(b.dataset.ds);
-      closeFly();
-      go(target);
-    });
-    return fly.el;
+  // In the icon rail the whole sidebar slides out over the page while the pointer is on it, so the names can be read, and a group opens
+  // downwards in place. Touch has no hover: the first tap on the rail slides it out, the next tap acts.
+  var peek = false, peekTimer = 0, pointerKind = 'mouse', dropKey = null;
+  function setPeek(on) {
+    clearTimeout(peekTimer);
+    on = !!on && collapsed();
+    if (peek === on) return;
+    peek = on;
+    side.classList.toggle('ds-peek', on);
   }
-  function paintFly() {
-    var m = readMenu().filter(function (x) { return x.type === 'group' && x.key === fly.group; })[0];
-    if (!m) { closeFly(); return; }
-    var el = ensureFly(), head = side.querySelector('[data-ds-group="' + fly.group + '"]');
-    el.innerHTML = '<p class="ds-fly-title">' + esc(m.label) + '</p>' + m.items.map(function (i) { return itemHtml(i, true); }).join('');
-    var r = head ? head.getBoundingClientRect() : { top: 80 }, sr = side.getBoundingClientRect();
-    el.style.left = Math.round(sr.right + 6) + 'px';
-    el.hidden = false;
-    var h = el.getBoundingClientRect().height;
-    el.style.top = Math.max(8, Math.min(Math.round(r.top), window.innerHeight - h - 8)) + 'px';
-  }
-  function openFly(group) { fly.group = group; paintFly(); renderSidebar(); }
-  function closeFly() {
-    if (!fly.group && (!fly.el || fly.el.hidden)) return;
-    fly.group = null;
-    if (fly.el) fly.el.hidden = true;
-    qa('[data-ds-group][aria-expanded="true"]', side).forEach(function (h) { if (collapsed()) h.setAttribute('aria-expanded', 'false'); });
-  }
-  document.addEventListener('mousedown', function (event) {
-    if (!fly.group) return;
-    if (event.target.closest('#demoFly') || event.target.closest('[data-ds-group]')) return;
-    closeFly();
-  });
-  document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && fly.group) { var g = fly.group; closeFly(); var h = side.querySelector('[data-ds-group="' + g + '"]'); if (h) h.focus(); } });
+  side.addEventListener('pointerdown', function (event) { pointerKind = event.pointerType || 'mouse'; }, true);
+  side.addEventListener('mouseenter', function () { if (collapsed()) setPeek(true); });
+  side.addEventListener('mouseleave', function () { clearTimeout(peekTimer); peekTimer = setTimeout(function () { setPeek(false); }, 160); });
+  side.addEventListener('focusin', function () { if (collapsed() && side.querySelector(':focus-visible')) setPeek(true); });
+  side.addEventListener('focusout', function (event) { if (!side.contains(event.relatedTarget) && !side.matches(':hover')) setPeek(false); });
+  document.addEventListener('pointerdown', function (event) { if (peek && !side.contains(event.target)) setPeek(false); });
+  document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && peek) setPeek(false); });
 
   function renderCrumb() {
     var parts = crumbParts.slice();
@@ -257,20 +231,21 @@
     var item = event.target.closest('[data-ds]');
     var toggle = event.target.closest('.ds-collapse');
     if (toggle) {
-      closeFly();
       userPref = collapsed() ? 'expanded' : 'collapsed';
       try { localStorage.setItem('demo.sidebar', userPref); } catch (e) { /* ignore */ }
+      setPeek(false);
       renderSidebar();
       return;
     }
+    if (collapsed() && !peek && pointerKind !== 'mouse') { setPeek(true); return; }
     if (head) {
-      var key = head.dataset.dsGroup;
-      if (collapsed()) { if (fly.group === key) closeFly(); else openFly(key); renderSidebar(); return; }
-      openKey = groupOpen(readMenu().filter(function (x) { return x.key === key; })[0] || { key: key, items: [] }) ? '' : key;
+      var key = head.dataset.dsGroup, opening = !groupOpen(readMenu().filter(function (x) { return x.key === key; })[0] || { key: key, items: [] });
+      openKey = opening ? key : '';
+      dropKey = opening ? key : null;
       renderSidebar();
       return;
     }
-    if (item) go(findItem(item.dataset.ds));
+    if (item) { setPeek(false); go(findItem(item.dataset.ds)); }
   });
 
   // Close buttons are not needed once every page is one click away.

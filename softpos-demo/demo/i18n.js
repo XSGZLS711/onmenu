@@ -21,6 +21,7 @@ window.DemoI18n = {
   'Shops': '门店',
   'Navigation demo · sample data': '导航演示 · 示例数据',
   'Collapse': '收起',
+  'Pin open': '固定展开',
   'Collapse to icons': '收起为图标',
   'Expand the sidebar': '展开侧边栏',
   'More': '更多',
