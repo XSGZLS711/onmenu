@@ -126,3 +126,15 @@
 
 /* A dish has no stock count, so "Non-stock" on every tile is only noise. */
 #appScreen #orderView .product-card .stock.stock-service { display: none; }
+
+/* Icon rail: a group opens a panel beside the rail. */
+.ds-fly { position: fixed; z-index: 120; min-width: 220px; max-width: 290px; padding: 8px; border-radius: 12px; background: #fff; color: #0f172a; box-shadow: 0 16px 40px rgba(15, 23, 42, .28); display: grid; gap: 2px; }
+.ds-fly[hidden] { display: none; }
+.ds-fly-title { margin: 2px 8px 6px; font-size: 11.5px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; color: #64748b; }
+.ds-fly .ds-item { display: flex; align-items: center; width: 100%; min-height: 42px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #0f172a; font: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; }
+.ds-fly .ds-item:hover { background: #e0f2fe; }
+.ds-fly .ds-item[aria-current="page"] { background: #075985; color: #fff; }
+.ds-fly .ds-label { overflow: visible; white-space: normal; }
+.ds-collapsed .ds-head.has-active { background: rgba(255, 255, 255, .18); color: #fff; }
+.ds-collapsed .ds-head[aria-expanded="true"] { background: rgba(255, 255, 255, .26); color: #fff; }
+.ds-group + .ds-group, .ds-item + .ds-group, .ds-group + .ds-item { margin-top: 2px; }

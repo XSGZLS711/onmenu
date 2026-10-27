@@ -38,31 +38,66 @@
   }
 
   // ---- read the existing menus ------------------------------------------------
-  var GROUPS = [
-    { key: 'sales', icon: 'sales', label: 'Sales', btn: 'salesMenuBtn', list: '#salesMenuDialog .sales-more-actions button' },
-    { key: 'stock', icon: 'stock', label: 'Stock', btn: 'productManagementBtn', list: '#productManagementDialog .sales-more-actions button' },
-    { key: 'expense', icon: 'expense', label: 'Expense', btn: 'inventorySuiteBtn', list: '#inventoryMenuDialog .sales-more-actions button' },
-    { key: 'reports', icon: 'reports', label: 'Reports', btn: 'reportsMenuBtn', list: '#reportMenuDialog .sales-more-actions button' }
+  // The pages are read from the vendor's tabs and pop-up menus as before, so permissions and handlers stay untouched.
+  // They are then arranged by what the person is doing, not by which pop-up they happened to live in.
+  var SOURCES = [
+    { key: 'sales', btn: 'salesMenuBtn', list: '#salesMenuDialog .sales-more-actions button' },
+    { key: 'stock', btn: 'productManagementBtn', list: '#productManagementDialog .sales-more-actions button' },
+    { key: 'expense', btn: 'inventorySuiteBtn', list: '#inventoryMenuDialog .sales-more-actions button' },
+    { key: 'reports', btn: 'reportsMenuBtn', list: '#reportMenuDialog .sales-more-actions button' }
   ];
-  function readMenu() {
-    var out = [];
+  // Groups follow the jobs: sell, look after customers, keep stock, buy, report, set up.
+  var LAYOUT = [
+    { key: 'home', label: ['Dashboard', '概览'], icon: 'dashboard', items: ['dashboardView'] },
+    { key: 'sales', label: ['Sales', '销售'], icon: 'sales', items: ['sales:retailSalesTab', 'sales:serviceSalesTab', 'quotesView'] },
+    { key: 'customers', label: ['Customers', '客户'], icon: 'wallet', items: ['sales:customerPaymentsTab', 'reports:statement', 'reports:aging'] },
+    { key: 'stock', label: ['Stock', '库存'], icon: 'stock', items: ['stock:productsView', 'stock:stockView|stockAdjust', 'stock:suite-stocktake', 'stock:suite-transfers', 'stock:suite-bulk'] },
+    { key: 'purchasing', label: ['Purchasing', '采购'], icon: 'cart', items: ['stock:stockView', 'expense:suite-purchases'] },
+    { key: 'reports', label: ['Reports', '报表'], icon: 'reports', items: ['reports:sales', 'reports:productsales', 'reports:productshopsales', 'reports:closing', 'reports:stock'] },
+    { key: 'setup', label: ['Setup', '设置'], icon: 'gear', items: ['reports:suite-pricing', 'reports:suite-integration', 'setup:system'] }
+  ];
+  var OTHER = { key: 'other', label: ['More', '其他'], icon: 'more' };
+  // Shorter names for the sidebar. The pages keep their own titles.
+  var NAMES = {
+    'quotesView': ['Quotations', '报价单'], 'sales:customerPaymentsTab': ['Customer payments', '客户付款'], 'reports:statement': ['Statements', '对账单'], 'reports:aging': ['Aging', '账龄'],
+    'stock:productsView': ['Products', '商品'], 'stock:stockView|stockAdjust': ['Adjust stock', '调整库存'], 'stock:suite-stocktake': ['Stocktake', '盘点'],
+    'stock:suite-transfers': ['Transfers', '调拨与收货'], 'stock:suite-bulk': ['Bulk transfer', '批量调拨'], 'stock:stockView': ['PO & Receiving', '采购单与收货'],
+    'expense:suite-purchases': ['Purchase documents', '采购单据'], 'reports:sales': ['Sales reports', '销售报表'], 'reports:productsales': ['Product sales', '商品销售'],
+    'reports:productshopsales': ['Product sales by shop', '分店商品销售'], 'reports:closing': ['Closing report', '结账报表'], 'reports:stock': ['Stock reports', '库存报表'],
+    'reports:suite-pricing': ['Pricing & promotions', '定价与促销'], 'reports:suite-integration': ['Accounting link', '会计对接'], 'setup:system': ['System setting', '系统设置']
+  };
+  function pick(pair) { return isZh() ? pair[1] : pair[0]; }
+  function readRaw() {
+    var raw = [];
     qa('#appScreen > nav.tabs > button').forEach(function (tab) {
-      var group = GROUPS.filter(function (g) { return g.btn === tab.id; })[0];
-      if (!group) {
-        if (tab.hidden) return;
-        var tabKey = keyOf(tab), name = text(tab);
-        out.push({ type: 'leaf', key: tabKey, group: null, label: name, icon: tab.dataset.tab === 'dashboardView' ? 'dashboard' : 'quotation', source: tab });
+      var src = SOURCES.filter(function (g) { return g.btn === tab.id; })[0];
+      if (!src) {
+        if (!tab.hidden) raw.push({ type: 'leaf', key: keyOf(tab), label: text(tab), source: tab });
         return;
       }
-      var items = qa(group.list).filter(function (b) { return !b.hidden; }).map(function (b) {
-        return { type: 'leaf', key: group.key + ':' + keyOf(b), group: group, label: pretty(text(b)), source: b, disabled: b.disabled };
+      qa(src.list).filter(function (b) { return !b.hidden; }).forEach(function (b) {
+        raw.push({ type: 'leaf', key: src.key + ':' + keyOf(b), label: pretty(text(b)), source: b, disabled: b.disabled });
+      });
+    });
+    var admin = $('manageUsersLink');
+    if (admin && !admin.hidden) raw.push({ type: 'leaf', key: 'setup:system', label: text(admin) || 'System Setting', source: { click: function () { openAdmin(); } } });
+    return raw;
+  }
+  function readMenu() {
+    var raw = readRaw(), used = {}, out = [];
+    function build(g, keys) {
+      var group = { key: g.key, label: pick(g.label), icon: g.icon };
+      var items = keys.map(function (k) { return raw.filter(function (r) { return r.key === k; })[0]; }).filter(Boolean).map(function (r) {
+        used[r.key] = 1;
+        return { type: 'leaf', key: r.key, group: g.key === 'home' ? null : group, label: NAMES[r.key] ? pick(NAMES[r.key]) : r.label, source: r.source, disabled: r.disabled };
       });
       if (!items.length) return;
-      if (items.length === 1) {
-        // A menu with one entry is just a link: one click instead of two, and no extra level to remember.
-        out.push({ type: 'leaf', key: items[0].key, group: group, label: tt(group.label), detail: items[0].label, icon: group.icon, source: items[0].source });
-      } else out.push({ type: 'group', key: group.key, label: tt(group.label), icon: group.icon, items: items });
-    });
+      // One page in a group is just a link: one click instead of two.
+      if (items.length === 1) out.push(Object.assign({}, items[0], { icon: g.icon }));
+      else out.push({ type: 'group', key: g.key, label: group.label, icon: g.icon, items: items });
+    }
+    LAYOUT.forEach(function (g) { build(g, g.items); });
+    build(OTHER, raw.filter(function (r) { return !used[r.key]; }).map(function (r) { return r.key; }));
     return out;
   }
   function readSalesActions() {
@@ -74,13 +109,24 @@
   // ---- shared state -----------------------------------------------------------
   var activeKey = 'sales:retailSalesTab';
   var crumbParts = [];
-  var expanded = { sales: true, stock: true, expense: true, reports: true };
+  var openKey = null;      // the one group the user opened by hand; null = follow the current page
+  var navigating = false;  // true while a sidebar click runs the vendor handlers
   function setActive(item) {
     activeKey = item.key;
-    crumbParts = item.group && item.type !== 'group' ? [tt(item.group.label), item.detail || item.label] : [item.detail || item.label];
+    crumbParts = item.group && item.type !== 'group' ? [item.group.label, item.label] : [item.label];
     if (item.key === 'sales:retailSalesTab') crumbParts = [];
+    openKey = null;
   }
   function toastMessage(message) { if (typeof toast === 'function') toast(message, false); }
+  // Run a menu entry the way a click on it would, and keep the highlight on it. Some vendor handlers call activateTab() on the way
+  // (the Invoice tab goes through the sale screen first), which must not move the highlight back.
+  function go(item) {
+    if (!item || item.disabled) return;
+    setActive(item);
+    navigating = true;
+    try { item.source.click(); } finally { navigating = false; }
+    renderSidebar();
+  }
 
   // ---- desktop and tablet: sidebar --------------------------------------------
   var side = document.createElement('nav');
@@ -95,6 +141,16 @@
   try { userPref = localStorage.getItem('demo.sidebar'); } catch (e) { /* storage may be blocked */ }
 
   function collapsed() { return userPref ? userPref === 'collapsed' : tabletQuery.matches; }
+  // One group is open at a time, so the whole list always fits on screen: the one the user opened, else the one holding the current page.
+  function groupOpen(m) {
+    if (openKey === '') return false;
+    if (openKey) return m.key === openKey;
+    return m.items.some(function (i) { return i.key === activeKey; });
+  }
+  function itemHtml(i, sub) {
+    return '<button type="button" class="ds-item" data-ds="' + esc(i.key) + '"' + (activeKey === i.key ? ' aria-current="page"' : '') + (i.disabled ? ' disabled' : '') + ' title="' + esc(i.label) + '">' +
+      (sub ? '' : icon(i.icon)) + '<span class="ds-label">' + esc(i.label) + '</span></button>';
+  }
 
   function renderSidebar() {
     var app = $('appScreen');
@@ -103,28 +159,68 @@
     app.classList.toggle('ds-collapsed', isCollapsed);
     var html = '<div class="ds-scroll">';
     readMenu().forEach(function (m) {
-      if (m.type === 'leaf') {
-        html += '<button type="button" class="ds-item" data-ds="' + esc(m.key) + '" title="' + esc(m.detail ? m.label + ': ' + m.detail : m.label) + '"' + (activeKey === m.key ? ' aria-current="page"' : '') + '>' +
-          icon(m.icon) + '<span class="ds-label">' + esc(m.label) + '</span></button>';
+      if (m.type === 'leaf') { html += itemHtml(m, false); return; }
+      var hasActive = m.items.some(function (i) { return i.key === activeKey; });
+      if (isCollapsed) {
+        html += '<button type="button" class="ds-head' + (hasActive ? ' has-active' : '') + '" data-ds-group="' + m.key + '" aria-haspopup="menu" aria-expanded="' + (fly.group === m.key) + '" title="' + esc(m.label) + '">' + icon(m.icon) + '<span class="ds-label">' + esc(m.label) + '</span></button>';
         return;
       }
-      var open = expanded[m.key] !== false && !isCollapsed;
-      var hasActive = m.items.some(function (i) { return i.key === activeKey; });
+      var open = groupOpen(m);
       html += '<div class="ds-group"><button type="button" class="ds-head' + (hasActive ? ' has-active' : '') + '" data-ds-group="' + m.key + '" aria-expanded="' + open + '" title="' + esc(m.label) + '">' +
         icon(m.icon) + '<span class="ds-label">' + esc(m.label) + '</span><svg class="ds-chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>';
-      if (open) {
-        html += '<div class="ds-sub">' + m.items.map(function (i) {
-          return '<button type="button" class="ds-item" data-ds="' + esc(i.key) + '"' + (activeKey === i.key ? ' aria-current="page"' : '') + '><span class="ds-label">' + esc(i.label) + '</span></button>';
-        }).join('') + '</div>';
-      }
+      if (open) html += '<div class="ds-sub">' + m.items.map(function (i) { return itemHtml(i, true); }).join('') + '</div>';
       html += '</div>';
     });
-    html += '</div><button type="button" class="ds-collapse" aria-pressed="' + isCollapsed + '" title="' + esc(tt(isCollapsed ? 'Expand the sidebar' : 'Collapse to icons')) + '">' +
+    var label = isCollapsed ? tt('Expand the sidebar') : tt('Collapse to icons');
+    html += '</div><button type="button" class="ds-collapse" aria-pressed="' + isCollapsed + '" title="' + esc(label) + '" aria-label="' + esc(label) + '">' +
       '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="' + (isCollapsed ? 'm6 3 5 5-5 5' : 'm10 3-5 5 5 5') + '" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span class="ds-label">' + esc(tt('Collapse')) + '</span></button>';
     side.innerHTML = html;
+    if (fly.group) { if (isCollapsed) paintFly(); else closeFly(); }
     renderCrumb();
     placeSidebar();
   }
+
+  // In the icon rail a group opens a small panel beside the rail, so every page stays one click away without widening the sidebar.
+  var fly = { el: null, group: null };
+  function ensureFly() {
+    if (fly.el) return fly.el;
+    fly.el = document.createElement('div');
+    fly.el.id = 'demoFly'; fly.el.className = 'ds-fly'; fly.el.setAttribute('role', 'menu'); fly.el.hidden = true;
+    document.body.appendChild(fly.el);
+    fly.el.addEventListener('click', function (event) {
+      var b = event.target.closest('[data-ds]');
+      if (!b) return;
+      var target = findItem(b.dataset.ds);
+      closeFly();
+      go(target);
+    });
+    return fly.el;
+  }
+  function paintFly() {
+    var m = readMenu().filter(function (x) { return x.type === 'group' && x.key === fly.group; })[0];
+    if (!m) { closeFly(); return; }
+    var el = ensureFly(), head = side.querySelector('[data-ds-group="' + fly.group + '"]');
+    el.innerHTML = '<p class="ds-fly-title">' + esc(m.label) + '</p>' + m.items.map(function (i) { return itemHtml(i, true); }).join('');
+    var r = head ? head.getBoundingClientRect() : { top: 80 }, sr = side.getBoundingClientRect();
+    el.style.left = Math.round(sr.right + 6) + 'px';
+    el.hidden = false;
+    var h = el.getBoundingClientRect().height;
+    el.style.top = Math.max(8, Math.min(Math.round(r.top), window.innerHeight - h - 8)) + 'px';
+  }
+  function openFly(group) { fly.group = group; paintFly(); renderSidebar(); }
+  function closeFly() {
+    if (!fly.group && (!fly.el || fly.el.hidden)) return;
+    fly.group = null;
+    if (fly.el) fly.el.hidden = true;
+    qa('[data-ds-group][aria-expanded="true"]', side).forEach(function (h) { if (collapsed()) h.setAttribute('aria-expanded', 'false'); });
+  }
+  document.addEventListener('mousedown', function (event) {
+    if (!fly.group) return;
+    if (event.target.closest('#demoFly') || event.target.closest('[data-ds-group]')) return;
+    closeFly();
+  });
+  document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && fly.group) { var g = fly.group; closeFly(); var h = side.querySelector('[data-ds-group="' + g + '"]'); if (h) h.focus(); } });
+
   function renderCrumb() {
     var parts = crumbParts.slice();
     crumb.hidden = !parts.length;
@@ -136,8 +232,7 @@
   }
   crumb.addEventListener('click', function (event) {
     if (!event.target.closest('[data-back-sale]')) return;
-    var sale = findItem('sales:retailSalesTab');
-    if (sale) { setActive(sale); sale.source.click(); renderSidebar(); }
+    go(findItem('sales:retailSalesTab'));
   });
   function placeSidebar() {
     var top = document.querySelector('#appScreen > .topbar');
@@ -158,27 +253,20 @@
     var item = event.target.closest('[data-ds]');
     var toggle = event.target.closest('.ds-collapse');
     if (toggle) {
+      closeFly();
       userPref = collapsed() ? 'expanded' : 'collapsed';
       try { localStorage.setItem('demo.sidebar', userPref); } catch (e) { /* ignore */ }
       renderSidebar();
       return;
     }
     if (head) {
-      if (collapsed()) {
-        userPref = 'expanded';
-        try { localStorage.setItem('demo.sidebar', userPref); } catch (e) { /* ignore */ }
-        expanded[head.dataset.dsGroup] = true;
-      } else expanded[head.dataset.dsGroup] = !(expanded[head.dataset.dsGroup] !== false);
+      var key = head.dataset.dsGroup;
+      if (collapsed()) { if (fly.group === key) closeFly(); else openFly(key); renderSidebar(); return; }
+      openKey = groupOpen(readMenu().filter(function (x) { return x.key === key; })[0] || { key: key, items: [] }) ? '' : key;
       renderSidebar();
       return;
     }
-    if (item) {
-      var target = findItem(item.dataset.ds);
-      if (!target || target.disabled) return;
-      setActive(target);
-      target.source.click();
-      renderSidebar();
-    }
+    if (item) go(findItem(item.dataset.ds));
   });
 
   // Close buttons are not needed once every page is one click away.
@@ -263,20 +351,23 @@
   }
   function renderMore() {
     var menu = readMenu(), sub = userLine();
-    var by = { top: [], sales: [], stock: [], expense: [], reports: [] };
+    // One section per group, in the same order as the desktop sidebar. Dashboard leads the Reports section.
+    var order = LAYOUT.map(function (g) { return g.key; }).concat(['other']), by = {};
+    function put(sec, tile, first) { (by[sec] = by[sec] || [])[first ? 'unshift' : 'push'](tile); }
     menu.forEach(function (x) {
       if (x.type === 'leaf') {
-        if (x.key === 'sales:retailSalesTab') return; // the bottom bar already has it
-        var sec = x.group ? x.group.key : (x.key === 'dashboardView' ? 'reports' : 'sales');
-        var tile = { id: 'leaf:' + x.key, label: x.detail || x.label, icon: x.key === 'dashboardView' ? 'dashboard' : null };
-        if (x.key === 'dashboardView') by[sec].unshift(tile); else by[sec].push(tile);
+        if (x.key === 'sales:retailSalesTab' || x.key === 'setup:system') return; // the bottom bar has the sale screen, Account has System Setting
+        if (x.key === 'dashboardView') { put('reports', { id: 'leaf:' + x.key, label: x.label, icon: 'dashboard' }, true); return; }
+        put(x.group ? x.group.key : 'other', { id: 'leaf:' + x.key, label: x.label });
       } else {
         x.items.forEach(function (i) {
-          if (i.key === 'sales:retailSalesTab') return;
-          by[x.key].push({ id: 'item:' + i.key, label: i.label, disabled: i.disabled });
+          if (i.key === 'sales:retailSalesTab' || i.key === 'setup:system') return;
+          put(x.key, { id: 'item:' + i.key, label: i.label, disabled: i.disabled });
         });
       }
     });
+    function sectionTitle(key) { var g = LAYOUT.filter(function (l) { return l.key === key; })[0] || OTHER; return pick(g.label); }
+    var TONES = { sales: 'sales', customers: 'expense', stock: 'stock', purchasing: 'tools', reports: 'reports', setup: 'account', other: 'account' };
     var tools = readSalesActions().map(function (a) { return { id: a.key, label: a.label, disabled: a.disabled }; });
     var account = [];
     accountRows.forEach(function (a) {
@@ -288,8 +379,10 @@
     });
     var html = '<header class="dm-head"><div class="dm-titles"><h2 id="dmTitle" tabindex="-1">' + esc(tt('More')) + '</h2>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</div></header>' +
       '<div class="dm-body"><label class="dm-search"><input type="search" id="dmSearch" autocomplete="off" placeholder="' + esc(tt('Find a function')) + '" aria-label="' + esc(tt('Find a function')) + '"></label>' +
-      sectionHtml(tt('Sales'), by.sales, 'sales') + sectionHtml(tt('Sales tools'), tools, 'tools') + sectionHtml(tt('Stock'), by.stock, 'stock') +
-      sectionHtml(tt('Expense'), by.expense, 'expense') + sectionHtml(tt('Reports'), by.reports, 'reports') + sectionHtml(isZh() ? '账户' : 'Account', account, 'account') +
+      order.map(function (key) {
+        var html = sectionHtml(sectionTitle(key), by[key] || [], TONES[key]);
+        return key === 'sales' ? html + sectionHtml(tt('Sales tools'), tools, 'tools') : html;
+      }).join('') + sectionHtml(isZh() ? '账户' : 'Account', account, 'account') +
       '<p class="dm-empty" hidden>' + esc(tt('Nothing matches')) + '</p></div>';
     more.innerHTML = html;
     more.scrollTop = 0;
@@ -333,10 +426,11 @@
     if (item.type === 'action') { backToSale(); item.source.click(); return; }
     if (item.key === 'sales:retailSalesTab') { backToSale(); return; }
     m.open = false;
-    m.page = { key: item.key, title: item.detail || item.label, back: backLabel };
+    m.page = { key: item.key, title: item.label, back: backLabel };
     pushHistory();
     renderPageBar();
-    item.source.click();
+    navigating = true;
+    try { item.source.click(); } finally { navigating = false; }
     showMoreUI();
   }
 
@@ -408,7 +502,7 @@
   if (baseActivate) {
     activateTab = function (id) {
       baseActivate(id);
-      if (id === 'orderView') { activeKey = 'sales:retailSalesTab'; crumbParts = []; if (!phoneQuery.matches) renderSidebar(); }
+      if (id === 'orderView' && !navigating) { activeKey = 'sales:retailSalesTab'; crumbParts = []; if (!phoneQuery.matches) renderSidebar(); }
     };
   }
   var baseSetPage = typeof setMobilePage === 'function' ? setMobilePage : null;
@@ -472,11 +566,11 @@
   // The permissions already hide every page a cashier may not use. When nothing is left except selling, the sidebar is pointless, so it goes
   // and the remaining sales pages move into the sales tools menu next to Refund and Layby.
   function cashierMode() {
-    var menu = readMenu(), admin = $('manageUsersLink');
+    var menu = readMenu(), admin = $('manageUsersLink'), selling = { sales: 1, customers: 1 };
     if (!menu.length || (admin && !admin.hidden)) return false;
     return menu.every(function (x) {
-      if (x.type === 'leaf') return x.key !== 'dashboardView' && (!x.group || x.group.key === 'sales');
-      return x.key === 'sales';
+      if (x.type === 'leaf') return x.key !== 'dashboardView' && (!x.group || !!selling[x.group.key]);
+      return !!selling[x.key];
     });
   }
   function salesPages() {
@@ -498,7 +592,7 @@
     salesPages().reverse().forEach(function (page) {
       var b = document.createElement('button');
       b.type = 'button'; b.dataset.demoTool = page.key; b.disabled = !!page.disabled;
-      b.textContent = page.detail || page.label;
+      b.textContent = page.label;
       box.insertBefore(b, box.firstChild);
     });
   }
@@ -507,10 +601,10 @@
     if (!b) return;
     var page = findItem(b.dataset.demoTool), dialog = b.closest('dialog');
     if (dialog && dialog.open) dialog.close();
-    if (page) { setActive(page); page.source.click(); renderSidebar(); }
+    go(page);
   });
 
-  window.DemoNav = { readMenu: readMenu, readSalesActions: readSalesActions, openItem: function (item) { setActive(item); item.source.click(); renderSidebar(); } };
+  window.DemoNav = { readMenu: readMenu, readSalesActions: readSalesActions, openItem: go };
 
   // ---- wiring -------------------------------------------------------------------
   var timer = 0;

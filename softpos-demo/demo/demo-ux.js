@@ -154,7 +154,7 @@
     var out = [];
     if (!nav()) return out;
     nav().readMenu().forEach(function (x) {
-      if (x.type === 'leaf') out.push({ kind: 'Pages', label: x.detail || x.label, group: x.group ? tt(x.group.label) : '', item: x });
+      if (x.type === 'leaf') out.push({ kind: 'Pages', label: x.label, group: x.group ? x.group.label : '', item: x });
       else x.items.forEach(function (i) { out.push({ kind: 'Pages', label: i.label, group: x.label, item: i }); });
     });
     return out;
@@ -162,22 +162,22 @@
   function salesTools() {
     return nav() ? nav().readSalesActions().filter(function (a) { return !a.disabled; }).map(function (a) { return { kind: 'Sales tools', label: a.label, item: a }; }) : [];
   }
-  function pageByLabel(re) {
-    var hit = allPages().filter(function (p) { return re.test(p.label); })[0];
+  function pageByKey(key) {
+    var hit = allPages().filter(function (p) { return p.item.key === key; })[0];
     return hit && hit.item;
   }
-  function openTask(re, subtab) {
-    var page = pageByLabel(re);
+  function openTask(key, subtab) {
+    var page = pageByKey(key);
     if (!page) return;
     nav().openItem(page);
     if (subtab) setTimeout(function () { var t = document.querySelector('[data-stock="' + subtab + '"]'); if (t) t.click(); }, 250);
   }
   function tasks() {
     var list = [
-      { label: 'Receive goods against a purchase order', re: /PO & Receiving|采购单与收货/, sub: 'poReceive' },
-      { label: 'Receive goods without a purchase order', re: /PO & Receiving|采购单与收货/, sub: 'directReceive' },
-      { label: 'Create a purchase order', re: /PO & Receiving|采购单与收货/, sub: 'poCreate' },
-      { label: 'Adjust stock', re: /Stock Adjustment|库存调整/ },
+      { label: 'Receive goods against a purchase order', key: 'stock:stockView', sub: 'poReceive' },
+      { label: 'Receive goods without a purchase order', key: 'stock:stockView', sub: 'directReceive' },
+      { label: 'Create a purchase order', key: 'stock:stockView', sub: 'poCreate' },
+      { label: 'Adjust stock', key: 'stock:stockView|stockAdjust' },
       { label: 'Close the day (Z report)', tool: /X \/ Z|日结/ },
       { label: 'Reprint a receipt', tool: /Reprint|重打/ },
       { label: 'Refund a sale', tool: /^Refund|退款/ },
@@ -186,12 +186,12 @@
     return list.filter(function (t) {
       if (t.fn) return t.show();
       if (t.tool) return salesTools().some(function (a) { return t.tool.test(a.label); });
-      return !!pageByLabel(t.re);
+      return !!pageByKey(t.key);
     }).map(function (t) {
       return { kind: 'Tasks', label: t.label, run: function () {
         if (t.fn) t.fn();
         else if (t.tool) { var a = salesTools().filter(function (x) { return t.tool.test(x.label); })[0]; if (a) a.item.source.click(); }
-        else openTask(t.re, t.sub);
+        else openTask(t.key, t.sub);
       } };
     });
   }
@@ -248,7 +248,7 @@
   }
   function openProduct(name, row, manager) {
     if (manager && nav()) {
-      var page = pageByLabel(/Product Management|商品管理/);
+      var page = pageByKey('stock:productsView');
       if (!page) return;
       nav().openItem(page);
       setTimeout(function () {
