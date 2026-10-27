@@ -1,0 +1,107 @@
+/* Phone layout; desktop keeps the catalog and cart side by side. */
+@media(max-width:600px){
+  body{font-size:14px}
+  body.mobile-signed-in{padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+  body.mobile-sale-page,body.mobile-cart-page{padding-bottom:calc(136px + env(safe-area-inset-bottom))}
+  .topbar{display:grid;grid-template-columns:52px minmax(0,1fr) 40px;gap:4px 10px;padding:10px 12px;position:sticky;top:0;align-items:center;min-height:90px}
+  .header-brand,.top-actions{display:contents}
+  .top-actions>.account-menu{display:none}
+  .header-logo{grid-column:1;grid-row:1/3;width:52px;height:52px}
+  .header-brand>div{grid-column:2;grid-row:1}
+  .header-brand .eyebrow{display:none}
+  .topbar h1{font-size:15px;line-height:1.25;font-weight:750}
+  .shop-label{grid-column:2;grid-row:2;display:block;font-size:0;margin:0;justify-self:start;max-width:100%}
+  .shop-label select{font-size:12px;min-height:28px;padding:3px 24px 3px 8px;width:auto;max-width:100%;border-radius:7px;background:#f8fafc}
+  .top-actions>.user-chip,.top-actions>.admin-link,.top-actions>#installSoftposBtn,.top-actions>#changePasswordBtn,.top-actions>#logoutBtn{display:none}
+  .mobile-avatar{display:grid;place-items:center;grid-column:3;grid-row:1/3;width:40px;min-height:40px;border-radius:50%;padding:0;background:#e0edfa;color:var(--navy)}
+  #appScreen>.tabs{display:none}
+  main{padding:10px;min-width:0}
+  #orderView.active-view{display:block}
+  #orderView .catalog{min-height:0;padding:0;border:0;box-shadow:none;background:transparent}
+  #orderView .cart-panel{display:none}
+  #appScreen[data-mobile-page="cart"] #orderView .catalog{display:none}
+  #appScreen[data-mobile-page="cart"] #orderView .cart-panel{display:flex;height:auto;min-height:calc(100dvh - 180px);padding:10px 12px;position:static}
+  #orderView .search-row{position:static;margin-bottom:8px;gap:6px;padding:0;background:transparent}
+  #orderView .search-row input{font-size:16px;min-height:44px;padding-right:8px}
+  #productSearch::placeholder{font-size:14px}
+  #orderView .search-row .primary{font-size:13px;padding:0 12px}
+  .mobile-catalog-tools{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}
+  .mobile-catalog-tools button{font-size:13px;min-height:44px;background:#fff;border:1px solid var(--line);padding:0 12px}
+  #mobileDisplayBtn{margin-left:auto}
+  #orderView .price-entry{display:none}
+  #orderView .catalog-tools{display:none}
+  #orderView .category-list{padding:6px 0 10px;gap:8px}
+  .category{border-radius:22px;min-height:44px;font-size:13px;padding:0 16px}
+  #orderView .product-grid:not(.list-mode){grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  #orderView .product-grid:not(.list-mode) .product-card{position:relative;min-height:166px;padding:9px;gap:7px;border-radius:10px}
+  #orderView .product-visual,#orderView .product-photo{height:80px}
+  #orderView .product-card strong{font-size:14px;line-height:1.3;overflow-wrap:anywhere}
+  #orderView .product-card .price{font-size:15px}
+  #orderView .product-card .stock{font-size:10px}
+  #orderView .product-card small{font-size:11px}
+  #orderView .product-card.mobile-selected{border-color:#0878bf;background:#f0f9ff}
+  .mobile-product-count{display:grid;place-items:center;position:absolute;right:7px;top:7px;min-width:26px;height:26px;padding:0 5px;border-radius:20px;background:#0878bf;color:#fff;font-size:12px;font-weight:700}
+  #orderView .product-grid.list-mode .product-card{position:relative;padding-right:40px}
+  .mobile-nav{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(3,1fr);padding:4px 8px calc(4px + env(safe-area-inset-bottom));height:calc(64px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line);z-index:20}
+  .mobile-nav button{display:grid;place-content:center;gap:3px;background:transparent;color:#64748b;border-radius:0;font-size:12px;font-weight:600;padding:2px;min-height:52px}
+  .mobile-nav button>span{position:relative;font-size:22px;line-height:24px}
+  .mobile-nav svg{display:block;width:23px;height:23px;margin:auto}
+  .mobile-nav button[aria-current="page"]{color:#0878bf}
+  #mobileCartCount{position:absolute;top:-4px;right:-15px;min-width:18px;height:18px;border-radius:12px;background:#dc2626;color:#fff;font-size:10px;line-height:18px;padding:0 4px}
+  .mobile-cart-bar{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));min-height:70px;display:none;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:#fff;border-top:1px solid var(--line);z-index:20}
+  .mobile-sale-page .mobile-cart-bar,.mobile-cart-page .mobile-cart-bar{display:flex}
+  .mobile-cart-page #payBtn{display:none}
+  .mobile-cart-bar>div{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;min-width:0}
+  .mobile-cart-bar small{font-size:12px;color:var(--muted)}
+  .mobile-cart-bar strong{font-size:17px;color:var(--navy);white-space:nowrap}
+  .mobile-cart-bar button{min-height:46px;white-space:nowrap;padding:0 14px;font-size:14px}
+  body:not(.mobile-signed-in) .mobile-nav,body:not(.mobile-signed-in) .mobile-cart-bar{display:none}
+  #orderView .cart-title{padding-bottom:4px;align-items:center}
+  #orderView .cart-title h2{font-size:17px}
+  #orderView .sale-customer{padding:4px 0;align-items:center}
+  #orderView .sale-customer>small{display:none}
+  #orderView .sale-customer>strong{grid-row:1;font-size:13px;overflow-wrap:anywhere}
+  #orderView .sale-customer>div{grid-row:1}
+  #orderView #salesHoldActions{order:4;padding:12px 0;margin-bottom:8px}
+  #orderView #salesHoldActions button,#orderView .sale-customer .link-btn,#orderView #clearCart{min-height:44px}
+  #orderView .cart-title{order:0}
+  #orderView .sale-customer{order:1}
+  #orderView .cart-items,#orderView #cartEmpty{order:2}
+  #orderView .cart-items{max-height:none;overflow:visible;flex:0 0 auto}
+  #orderView .cart-summary{order:7;font-size:15px;border-top:1px solid var(--line)}
+  #orderView #mobileSubtotalRow{display:grid;order:5;margin-top:auto;padding-top:14px;padding-bottom:4px}
+  #orderView .cart-vat{order:6;padding-bottom:8px}
+  #orderView .cart-actions{order:8}
+  #orderView .cart-summary strong{font-size:22px}
+  #orderView .cart-line{gap:0;padding:8px 0;grid-template-columns:minmax(0,1fr) auto;align-items:start}
+  #orderView .cart-line h3{overflow-wrap:anywhere;font-size:14px;line-height:20px}
+  #orderView .cart-line-content{display:contents}
+  #orderView .cart-line-content>div{display:contents}
+  #orderView .cart-thumb{display:none}
+  #orderView .cart-line h3{grid-column:1;grid-row:1}
+  #orderView .line-total{grid-column:2;grid-row:1;font-size:14px;white-space:nowrap;padding-left:8px;line-height:20px}
+  #orderView .cart-discount-btn{min-height:36px;font-size:12px;background:transparent;padding:0 10px}
+  #orderView .cart-unit-price{grid-column:1/-1;grid-row:2;margin:0;gap:4px;font-size:12px;min-height:28px}
+  #orderView .qty-control{grid-column:1/-1;gap:6px;flex-wrap:nowrap;margin-top:0}
+  #orderView .qty-control button{min-height:44px;width:40px;flex-shrink:0}
+  #orderView .qty-control input{min-height:44px;width:58px;font-size:16px}
+  #orderView .qty-control .remove{width:auto;font-size:12px;padding:0 10px;margin-left:auto}
+  #orderView .service-description{grid-column:1/-1;min-width:0;margin:0}
+  #orderView .service-description button{min-height:36px;font-size:12px;padding:0 8px}
+  #orderView .service-description-preview{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-height:none;margin:2px 0 6px}
+  #mobileMoreDialog{max-height:85dvh;overflow:auto;margin:auto auto 0;border-radius:18px 18px 0 0;width:100%}
+  .mobile-menu-items{display:grid;gap:8px;padding-bottom:env(safe-area-inset-bottom)}
+  .mobile-menu-item{display:flex;align-items:center;text-decoration:none;min-height:48px;border:1px solid var(--line);border-radius:9px;padding:10px 14px;text-align:left;background:#f8fafc;color:var(--navy);font-size:14px;font-weight:650}
+  #mobilePriceDialog{max-height:90dvh;overflow:auto}
+  #mobilePriceDialog .price-entry{display:grid;gap:10px;background:transparent;border:0;margin:0;padding:0}
+  #mobilePriceDialog .price-entry-row{display:flex;align-items:end;gap:8px}
+  #mobilePriceDialog .price-entry-row label{flex:1;min-width:0}
+  #mobilePriceDialog input{font-size:16px}
+  #mobilePriceDialog .price-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+  #mobilePriceDialog .price-keypad button{min-height:64px;font-size:28px;touch-action:manipulation}
+  #mobilePriceDialog summary{display:none}
+  .toast{bottom:calc(140px + env(safe-area-inset-bottom));font-size:13px}
+  dialog{max-height:92dvh;overflow:auto}
+}
+
+@media(max-width:600px){#orderView .sale-rep-label{order:2;padding:8px 0}#orderView .sale-rep-label select{min-height:44px}}

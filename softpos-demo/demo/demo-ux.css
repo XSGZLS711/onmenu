@@ -1,0 +1,120 @@
+/* Interaction improvements for the daily jobs (see demo-ux.js). */
+
+/* 1. Quick actions under the cart title replace the unlabelled icons. */
+.demo-quick { order: 1; flex-shrink: 0; display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0 4px; }
+.dq-btn { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border: 1px solid #c9dceb; border-radius: 10px; background: #fff; color: #075985; font-size: 13.5px; font-weight: 650; cursor: pointer; }
+.dq-btn:hover:not(:disabled) { background: #e0f2fe; }
+.dq-btn:disabled { opacity: .45; cursor: not-allowed; }
+.dq-btn[hidden] { display: none; }
+.dq-badge { position: absolute; top: -7px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #dc2626; color: #fff; font-size: 11.5px; line-height: 20px; text-align: center; }
+.dq-badge[hidden] { display: none; }
+@media (min-width: 601px) {
+  #orderView .cart-header-actions #salesMoreBtn, #orderView .cart-header-actions #salesHoldActions { display: none !important; }
+}
+@media (max-width: 600px) { .demo-quick, .demo-searchbtn { display: none !important; } }
+
+/* 2. The receipt leads with the change, and the close button is the next sale. */
+#receiptContent .receipt-change { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding: 12px 16px; border-radius: 12px; background: #dcfce7; color: #14532d; }
+#receiptContent .receipt-change dt { font-size: 16px; font-weight: 700; }
+#receiptContent .receipt-change dd { margin: 0; font-size: 34px; font-weight: 850; line-height: 1.1; }
+#closeReceipt[data-demo-new="1"] { min-width: 150px; }
+.dq-count { display: inline-grid; place-items: center; min-width: 22px; height: 22px; margin-left: 6px; border-radius: 11px; background: rgba(255, 255, 255, .28); font-size: 12px; }
+
+/* 3. Quick cash amounts. */
+.demo-quickcash { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 4px; }
+.demo-quickcash[hidden] { display: none; }
+.dq-cash { min-height: 46px; min-width: 66px; padding: 0 16px; border: 1px solid #86efac; border-radius: 10px; background: #f0fdf4; color: #166534; font-size: 17px; font-weight: 750; cursor: pointer; }
+.dq-cash:hover { background: #dcfce7; }
+.dq-exact { background: #16a34a; border-color: #16a34a; color: #fff; }
+.dq-exact:hover { background: #15803d; }
+
+/* 4. Ctrl+K search. */
+.demo-searchbtn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer; }
+.demo-searchbtn:hover { background: #f1f5f9; }
+.demo-searchbtn kbd { font: inherit; font-size: 11px; padding: 1px 6px; border: 1px solid #cbd5e1; border-radius: 5px; color: #64748b; background: #f8fafc; }
+.dp { position: fixed; inset: 0; z-index: 400; display: flex; justify-content: center; align-items: flex-start; padding: 12vh 16px 0; background: rgba(15, 23, 42, .45); }
+.dp[hidden] { display: none; }
+.dp-box { display: flex; flex-direction: column; width: min(640px, 100%); max-height: 70vh; overflow: hidden; border-radius: 16px; background: #fff; box-shadow: 0 24px 60px rgba(15, 23, 42, .35); }
+.dp-box input { width: 100%; min-height: 58px; padding: 0 20px; border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; box-shadow: none; outline: none; font-size: 18px; background: #fff; }
+#dpList { margin: 0; padding: 6px; list-style: none; overflow: auto; }
+#dpList li[role="option"] { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 11px 12px; border-radius: 10px; cursor: pointer; }
+#dpList li.on { background: #e0f2fe; }
+#dpList .dp-label { font-weight: 650; color: #0f172a; }
+#dpList small { color: #64748b; white-space: nowrap; }
+.dp-head { padding: 10px 12px 4px; font-size: 11.5px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; color: #64748b; }
+.dp-none { padding: 18px 12px; color: #64748b; }
+.dp-hint { display: flex; gap: 14px; margin: 0; padding: 8px 14px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; }
+.dp-hint span { padding: 1px 6px; border: 1px solid #cbd5e1; border-radius: 5px; background: #f8fafc; }
+
+/* Favourites. */
+.fav-star { flex: none; width: 36px; min-height: 36px; margin-left: 4px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: #cbd5e1; font-size: 22px; line-height: 1; cursor: pointer; }
+.fav-star[aria-pressed="true"] { color: #f59e0b; }
+.fav-star:hover { background: #fef3c7; color: #f59e0b; }
+
+/* Touch sizes: 44 px is the smallest comfortable target on a tablet. */
+@media (min-width: 601px) {
+  #appScreen #orderView .cart-grid-actions button { width: 44px; min-height: 44px; }
+  #appScreen #orderView .cart-grid-qty { min-height: 44px; }
+  #appScreen #orderView .cart-grid-description { min-height: 40px; }
+  #appScreen #orderView #clearCart { min-height: 44px; min-width: 44px; }
+}
+
+/* Tables scroll inside their card instead of being cut off on narrow windows. */
+@media (min-width: 601px) {
+  .suite-table, .table-wrap, .admin-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
+/* On a phone the star sits in the corner of the tile so the price and stock keep their line. */
+@media (max-width: 600px) {
+  .product-card .fav-star { position: absolute; right: 2px; bottom: 2px; margin: 0; z-index: 2; }
+}
+
+/* 5. Hot sellers: the dish number is the picture. */
+#appScreen #orderView #productList.menu-mode { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+#appScreen #orderView #productList.menu-mode .menu-tile {
+  --tone: #075985; --tone-soft: #e0f2fe;
+  min-height: 172px; padding: 6px 8px 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 4px;
+  text-align: center; border: 2px solid var(--tone-soft); border-radius: 16px; background: #fff; cursor: pointer;
+}
+.menu-tile.tone-orange { --tone: #c2410c; --tone-soft: #ffedd5; }
+.menu-tile.tone-green { --tone: #15803d; --tone-soft: #dcfce7; }
+.menu-tile.tone-purple { --tone: #6d28d9; --tone-soft: #ede9fe; }
+.menu-tile.tone-rose { --tone: #be123c; --tone-soft: #ffe4e6; }
+.menu-tile.tone-teal { --tone: #0f766e; --tone-soft: #ccfbf1; }
+#appScreen #orderView #productList.menu-mode .menu-tile .product-card-top { position: absolute; top: 6px; right: 6px; min-height: 0; display: flex; }
+.menu-number { flex: 1; display: grid; place-items: center; width: 100%; border-radius: 12px; background: var(--tone-soft); color: var(--tone); font-size: clamp(56px, 5.6vw, 88px); font-weight: 900; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+#appScreen #orderView #productList.menu-mode .menu-tile strong { font-size: 14px; line-height: 1.2; }
+.menu-price { font-size: 14px; font-weight: 800; color: #0f172a; }
+.menu-tile.mobile-selected { border-color: var(--tone); }
+.menu-tile.menu-flash { animation: menu-flash .7s ease; }
+@keyframes menu-flash { 0% { transform: scale(1); box-shadow: 0 0 0 0 var(--tone); } 30% { transform: scale(1.05); box-shadow: 0 0 0 6px var(--tone-soft); } 100% { transform: scale(1); box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .menu-tile.menu-flash { animation: none; outline: 3px solid var(--tone); } }
+@media (max-width: 600px) {
+  #appScreen #orderView #productList.menu-mode { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  #appScreen #orderView #productList.menu-mode .menu-tile { min-height: 132px; }
+  .menu-number { font-size: 52px; }
+}
+
+/* The number box sits in the search row of the Hot sellers view. */
+.menu-box { display: flex; align-items: center; gap: 6px; flex: none; }
+.menu-box[hidden] { display: none; }
+.menu-box #menuNo { width: 96px; min-height: 48px; padding: 0 10px; border: 2px solid #be123c; border-radius: 10px; font-size: 24px; font-weight: 800; text-align: center; }
+.dq-add { background: #be123c; border-color: #be123c; color: #fff; }
+.dq-add:hover:not(:disabled) { background: #9f1239; color: #fff; }
+
+/* The numbering dialog. */
+#menuNumbersDialog { width: min(640px, 94vw); }
+.mn-tools { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+.mn-tools input { flex: 1; }
+.mn-list { max-height: 52vh; overflow: auto; border: 1px solid #e2e8f0; border-radius: 10px; }
+.mn-row { display: grid; grid-template-columns: 84px 64px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 10px; border-bottom: 1px solid #f1f5f9; }
+.mn-row .mn-no { min-height: 40px; text-align: center; font-weight: 800; }
+.mn-code { color: #64748b; font-size: 13px; }
+.mn-cat { color: #64748b; font-size: 12.5px; }
+.mn-row.mn-bad .mn-no { border-color: #dc2626; background: #fef2f2; }
+
+@media (max-width: 600px) {
+  #orderView .search-row { flex-wrap: wrap; }
+  .menu-box { flex: 1 1 100%; order: 3; }
+  .menu-box #menuNo { flex: 1; width: auto; }
+}

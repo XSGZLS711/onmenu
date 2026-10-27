@@ -1,0 +1,14 @@
+/* Demo: the vendor forced every label to Title Case with text-transform: capitalize !important, which is harder to read and inconsistent
+   (sentence case in the source, Title Case on screen). The demo shows text as written. */
+@media screen {
+  :is(h1,h2,h3,h4,h5,h6,label,legend,button,th,dt,summary,[role="tab"],.eyebrow,.service-header-meta small,.service-line-entry>span,#serviceAccountLabel,.service-line-fields>span,.service-line-fields>strong,.recipe-cost>div>span,.account-menu-items>a,.admin-link){text-transform:none!important}
+  input::placeholder,textarea::placeholder{ text-transform:none }
+  /* Form values and options can contain customer names, codes, email addresses and descriptions. */
+  :is(input,textarea,select,option,output,pre,code,kbd,samp){text-transform:none!important}
+  :is(.product-card,.product-manage-row,.service-product-result,.recipe-material-choice,.customer-row,.suite-results button,button[data-pick],button[data-sale-customer],button[data-customer-id],button[data-sales-rep],button:has(small),.service-description-edit,.record-card h3,.cart-line h3,#companyName,#componentProductName,#countProductName,#detailTitle,#paymentCustomerHeading,#laybyInvoiceHeading,#refundInvoiceLabel,#chooseSaleCustomer,#serviceChooseCustomer,#serviceChooseRep,#laybyChooseCustomer,#selectSalesRep,[data-ui-case="preserve"]),
+  :is(.product-card,.product-manage-row,.service-product-result,.recipe-material-choice,.customer-row,.suite-results button,button[data-pick],button[data-sale-customer],button[data-customer-id],button[data-sales-rep],button:has(small),.service-description-edit,[data-ui-case="preserve"]) *{text-transform:none!important}
+  /* Document previews preserve their original layout and text casing. */
+  :is(#receiptContent,#fiscalPaper,#offlineReceiptPaper,#poPrintPaper,#customerReportPaper,#customerPaymentReceipt,#laybyPaymentReceipt,#refundReceipt,.po-paper,.invoice-paper,.receipt-paper,.a4-invoice,.a5-invoice),
+  :is(#receiptContent,#fiscalPaper,#offlineReceiptPaper,#poPrintPaper,#customerReportPaper,#customerPaymentReceipt,#laybyPaymentReceipt,#refundReceipt,.po-paper,.invoice-paper,.receipt-paper,.a4-invoice,.a5-invoice) *{text-transform:revert!important}
+  .service-grid td[data-label]::before,.suite-table td[data-label]::before{text-transform:none!important}
+}

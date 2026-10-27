@@ -1,0 +1,675 @@
+/* Colour category catalog and compact cart, shared by desktop and phones. */
+.layby-workspace{padding:14px;display:grid;gap:12px;grid-template-columns:minmax(240px,1fr) minmax(0,2fr)}.layby-card{min-width:0;border:1px solid #dbe4ee;border-radius:10px;padding:14px;background:white}.layby-card h3{margin:0 0 10px}.layby-card p{font-size:13px}.layby-card .ops-result:empty{display:none}.layby-search{display:flex;gap:8px}.layby-search input{min-width:0;flex:1}.layby-list{max-height:340px;overflow:auto;display:grid;gap:6px}.layby-list>button{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:54px;padding:8px 10px;background:#f1f7fc;color:#153650;border:1px solid #dbe4ee;text-align:left}.layby-list small{display:block;font-size:11px;font-weight:400;margin-top:3px}.layby-list>button>strong{text-align:right;white-space:nowrap}#laybyDetail{grid-column:1/-1}.layby-detail-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}.layby-balances{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}.layby-balances>div{display:grid;gap:4px;background:#f1f7fc;border-radius:8px;padding:10px}.layby-balances strong{font-size:19px;color:#075985}.layby-payment-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.layby-payment-fields label{display:grid;gap:5px;min-width:0;font-size:12px}.layby-payment-fields label[hidden]{display:none}#laybyPaymentReceipt:empty{display:none}#laybyPaymentReceipt{margin-top:12px}#laybyHistory{font-size:12px}#productManagementDialog{width:min(400px,calc(100vw - 24px))}@media(max-width:700px){.layby-workspace{grid-template-columns:minmax(0,1fr);padding:10px}.layby-payment-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.layby-card{padding:12px}.layby-balances strong{font-size:16px}.layby-detail-heading{align-items:start}.layby-list>button{font-size:12px}.layby-payment-fields input,.layby-payment-fields select{width:100%;min-width:0}}@media(max-width:360px){.layby-payment-fields{grid-template-columns:minmax(0,1fr)}}
+.tone-blue{--tile-tint:#eaf4ff;--tile-colour:#075ca8;--tile-line:#bfdbfe}
+.tone-green{--tile-tint:#eaf8ee;--tile-colour:#166534;--tile-line:#bbebca}
+.tone-purple{--tile-tint:#f3edff;--tile-colour:#6b36b4;--tile-line:#ded0fa}
+.tone-orange{--tile-tint:#fff1e2;--tile-colour:#9a4300;--tile-line:#ffd5a7}
+.tone-rose{--tile-tint:#fff0f4;--tile-colour:#a82b58;--tile-line:#f6c9d8}
+.tone-teal{--tile-tint:#e8f7f5;--tile-colour:#06685f;--tile-line:#b8e4de}
+#orderView .category{display:inline-flex;align-items:center;gap:7px;border:1px solid transparent;border-radius:12px;background:var(--tile-tint);color:var(--tile-colour);font-weight:750;min-height:42px}
+#orderView .category svg{width:17px;height:17px;flex-shrink:0}
+#orderView .category.active{background:var(--tile-colour);color:#fff;box-shadow:0 3px 8px #17324d12}
+#orderView .product-grid:not(.list-mode){grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:11px}
+#orderView .product-grid:not(.list-mode) .product-card{padding:0;gap:0;min-height:205px;border-radius:14px}
+#orderView .product-card{position:relative;border:1px solid #d9e3ee;border-radius:14px;padding:0;gap:0;background:#fff;overflow:hidden;box-shadow:0 3px 10px #18364b07;transition:border-color .15s,box-shadow .15s}
+#orderView .product-card:hover{border-color:var(--tile-line);box-shadow:0 5px 15px #18364b14}
+#orderView .product-card.mobile-selected{border:2px solid #0878bf;background:#fff;box-shadow:0 0 0 2px #0878bf0c}
+#orderView .product-category-band{display:flex;align-items:center;gap:6px;min-height:29px;padding:5px 10px;background:var(--tile-tint);color:var(--tile-colour);font-size:11px;font-weight:750;padding-right:34px;overflow-wrap:anywhere}
+#orderView .product-category-band svg{width:15px;height:15px;flex-shrink:0}
+#orderView .product-visual{height:96px;margin:0;background:linear-gradient(145deg,var(--tile-tint),#fff);border-radius:0;display:grid;place-items:center;position:relative;padding:8px}
+#orderView .product-photo{width:100%;height:80px;object-fit:contain;background:transparent;border-radius:8px}
+#orderView .product-placeholder{height:100%;width:100%;display:grid;place-items:center;color:var(--tile-colour);background:transparent;gap:0}
+#orderView .product-placeholder svg{width:48px;height:48px;background:var(--tile-tint);padding:8px;border-radius:14px}
+#orderView .product-details{padding:10px 11px 5px;flex:1;min-width:0}
+#orderView .product-card strong{font-size:14px;line-height:1.35;display:block;overflow-wrap:anywhere}
+#orderView .product-card small:empty{display:none}
+#orderView .product-card small{font-size:10px;line-height:1.35;color:#64748b}
+#orderView .product-card footer{padding:3px 11px 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between}
+#orderView .product-grid:not(.list-mode) .product-card .price,#orderView .product-card .price{font-size:17px;font-weight:850;color:#075ca8;white-space:nowrap}
+#orderView .stock{font-size:10px;line-height:1.35;padding:3px 6px;border-radius:7px;background:#eaf8ee;color:#166534;overflow-wrap:anywhere}
+#orderView .stock.stock-empty{background:#fff1e2;color:#9a4300}
+#orderView .stock.stock-service{background:#eef2f7;color:#52637a}
+.mobile-product-count{display:grid;place-items:center;position:absolute;right:7px;top:6px;min-width:24px;height:24px;padding:0 5px;border-radius:20px;background:#0878bf;color:#fff;font-size:12px;font-weight:800}
+#orderView .product-grid.list-mode .product-card{display:grid;grid-template-columns:54px minmax(0,1fr) auto;align-items:center;padding:7px 38px 7px 8px;border:1px solid #d9e3ee;border-left:4px solid var(--tile-colour);gap:8px;min-height:76px}
+#orderView .list-mode .product-category-band{display:none}
+#orderView .product-grid.list-mode .product-visual,#orderView .product-grid.list-mode .product-photo{height:52px;width:52px;border-radius:9px;padding:3px}
+#orderView .list-mode .product-placeholder svg{width:44px;height:44px}
+#orderView .list-mode .product-details{padding:0}
+#orderView .list-mode .product-card footer{padding:0;flex-direction:column;align-items:flex-end}
+#orderView .cart-line{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:3px 9px;margin:9px 0;padding:10px;border:1px solid #e1e8f0;border-radius:12px;background:#fff;align-items:start}
+#orderView .cart-line-content,#orderView .cart-line-content>div:not(.cart-thumb){display:contents}
+#orderView .cart-thumb{display:grid;grid-column:1;grid-row:1/4;width:42px;height:54px;place-items:center;background:var(--tile-tint);color:var(--tile-colour);border-radius:9px;overflow:hidden}
+#orderView .cart-thumb img{width:100%;height:100%;object-fit:contain;padding:3px}
+#orderView .cart-thumb svg{width:27px;height:27px}
+#orderView .cart-line h3{grid-column:2;grid-row:1;font-size:13px;line-height:1.4;overflow-wrap:anywhere;margin:0}
+#orderView .line-total{grid-column:3;grid-row:1;font-size:13px;line-height:1.4;white-space:nowrap;padding:0}
+#orderView .cart-unit-price{grid-column:2/4;grid-row:2;margin:0;font-size:11px;display:flex;align-items:center;flex-wrap:wrap;gap:3px;min-width:0}
+#orderView .cart-discount-btn{font-size:11px;min-height:32px;padding:0 6px}
+#orderView .qty-control{grid-column:2/4;grid-row:3;gap:5px;margin:0;flex-wrap:nowrap}
+#orderView .qty-control button{width:34px;min-height:36px;flex-shrink:0;border-radius:8px}
+#orderView .qty-control input{width:49px;min-height:36px;font-size:14px;padding:3px}
+#orderView .qty-control .remove{width:36px;margin-left:auto;padding:5px;color:#c52d43}
+#orderView .remove svg{width:18px;height:18px;vertical-align:middle}
+#orderView .service-description{grid-column:2/4;grid-row:4;min-width:0;margin:0}
+#orderView .service-description button{justify-self:start;background:#eef4fa;color:#075985;min-height:34px;font-size:11px;padding:0 10px}
+#orderView .service-description-preview{overflow-wrap:anywhere}
+@media(max-width:600px){
+ #orderView .product-grid:not(.list-mode){grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ #orderView .product-grid:not(.list-mode) .product-card{padding:0;gap:0;min-height:190px;border-radius:13px}
+ #orderView .product-category-band{font-size:11px;padding-left:9px;min-height:28px}
+ #orderView .product-visual{height:82px}
+ #orderView .product-photo{height:68px}
+ #orderView .product-details{padding:8px 9px 4px}
+ #orderView .product-card footer{padding:3px 9px 9px}
+ #orderView .product-grid:not(.list-mode) .product-card .price{font-size:16px}
+ #orderView .product-card .stock{font-size:10px}
+ #orderView .category{padding:0 12px;min-height:44px}
+ #orderView .cart-line{grid-template-columns:36px minmax(0,1fr) auto;gap:3px 7px;padding:9px;margin:8px 0}
+ #orderView .cart-thumb{display:grid;width:36px;height:48px}
+ #orderView .cart-line h3,#orderView .line-total{font-size:13px}
+ #orderView .qty-control button,#orderView .qty-control input{min-height:44px}
+ #orderView .qty-control button{width:37px}
+ #orderView .qty-control .remove{width:44px}
+ #orderView .cart-unit-price{font-size:11px}
+ #orderView .service-description button{min-height:40px}
+}
+
+/* Admin-enabled price entry stays open in a dedicated desktop rail. */
+@media(min-width:601px){
+ #orderView .price-keypad-active .price-entry{background:linear-gradient(160deg,#edf7ff,#f4f0ff);border:1px solid #c8dff1;border-radius:15px;padding:14px;box-shadow:0 4px 12px #12304b09}
+ #orderView .price-keypad-active .price-entry details summary{display:none}
+ #orderView .price-keypad-active .price-entry details[open] .price-keypad{position:static;top:auto;right:auto;width:100%;max-width:none;padding:0;margin:0;background:transparent;border:0;box-shadow:none;gap:12px}
+ #orderView .price-keypad-active .price-keypad button{min-height:76px;font-size:30px;touch-action:manipulation;font-weight:800;border:1px solid #bbd7ec;border-radius:11px;background:#fff;color:#075ca8;box-shadow:0 3px 0 #cee0ee;transition:background .1s,transform .1s}
+ #orderView .price-keypad-active .price-keypad button:hover{background:#e0f1ff;border-color:#73afe0}
+ #orderView .price-keypad-active .price-keypad button:active{transform:translateY(2px);box-shadow:0 1px 0 #cee0ee;background:#cce7ff}
+ #orderView .price-keypad-active .price-keypad button:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+ #orderView .price-keypad-active .price-keypad [data-key="0"]{background:#087d8c;border-color:#087d8c;color:#fff;box-shadow:0 3px 0 #06616e}
+ #orderView .price-keypad-active .price-keypad [data-key="."]{background:#efe6ff;color:#6b36b4;border-color:#d6c6ed}
+ #orderView .price-keypad-active .price-keypad [data-key="back"]{background:#ffedf0;color:#b42342;border-color:#efc8d0}
+ #orderView .price-keypad-active #priceEntryAmount{font-size:32px;font-weight:800;text-align:right;color:#123452;border:2px solid #a8cde8;background:#fff;min-height:72px}
+ #orderView .price-keypad-active #priceEntryAmount::placeholder{font-size:16px;font-weight:600;color:#64748b}
+ #orderView .price-keypad-active .price-entry-row label{font-size:13px;color:#075985}
+ #orderView .price-keypad-active #clearEntryPrice{background:#e1eaf5;color:#24465e;min-height:52px;font-size:15px;font-weight:750;touch-action:manipulation}
+}
+@media(min-width:901px){
+ #orderView .catalog.price-keypad-active{display:grid;grid-template-columns:300px minmax(0,1fr);align-content:start;gap:0 14px}
+ #orderView .catalog.price-keypad-active>.search-row{grid-column:2;grid-row:1}
+ #orderView .catalog.price-keypad-active>.catalog-tools{grid-column:2;grid-row:2}
+ #orderView .catalog.price-keypad-active>.category-list{grid-column:2;grid-row:3}
+ #orderView .catalog.price-keypad-active>.product-grid{grid-column:2;grid-row:4}
+ #orderView .catalog.price-keypad-active>#productEmpty{grid-column:2;grid-row:5}
+ #orderView .price-keypad-active #priceEntryPanel{grid-column:1;grid-row:1/6;position:sticky;top:84px;align-self:start;display:flex;flex-direction:column;gap:14px;min-width:0;margin:0}
+ #orderView .price-keypad-active .price-entry-row{display:grid;width:100%;gap:8px}
+ #orderView .price-keypad-active .price-entry p{font-size:12px;line-height:1.5}
+ #orderView .price-keypad-active .price-entry details{width:100%}
+}
+@media(min-width:601px) and (max-width:900px){
+ #orderView .price-keypad-active #priceEntryPanel{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:10px}
+ #orderView .price-keypad-active .price-entry-row{grid-column:1;grid-row:1;align-self:start;display:grid}
+ #orderView .price-keypad-active .price-entry p{grid-column:1;grid-row:2;align-self:start}
+ #orderView .price-keypad-active .price-entry details{grid-column:2;grid-row:1/3}
+}
+
+/* Quick sale tiles: text first; uploaded images are optional small thumbnails. */
+#orderView .product-grid:not(.list-mode){grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:8px}
+#orderView .product-grid:not(.list-mode) .product-card{min-height:102px;padding:8px 9px 8px 10px;gap:4px;border-radius:10px;border-left:4px solid var(--tile-colour);justify-content:flex-start;background:linear-gradient(115deg,#fff,var(--tile-tint))}
+#orderView .product-card.mobile-selected{border:2px solid #0878bf;border-left:4px solid #0878bf}
+#orderView .product-grid:not(.list-mode) .product-category-band{padding:0 23px 0 0;min-height:13px;font-size:10px;background:transparent;color:var(--tile-colour);line-height:1.3}
+#orderView .product-grid:not(.list-mode) .product-details{padding:0;flex:0 0 auto}
+#orderView .product-grid:not(.list-mode) .product-card strong{font-size:13px;line-height:1.35}
+#orderView .product-grid:not(.list-mode) .product-card.has-product-photo .product-details{padding-right:40px}
+#orderView .product-grid:not(.list-mode) .product-visual{position:absolute;right:7px;top:25px;width:34px;height:42px;padding:0;border-radius:5px;background:transparent}
+#orderView .product-grid:not(.list-mode) .product-photo{width:34px;height:42px;background:transparent;border-radius:4px}
+#orderView .product-grid:not(.list-mode) .product-card footer{margin-top:auto;padding:0;gap:3px;align-items:center}
+#orderView .product-grid:not(.list-mode) .product-card .price{font-size:16px;line-height:1.3}
+#orderView .product-card .stock{padding:2px 4px;font-size:9px}
+#orderView .product-card small{font-size:9px;margin-top:3px}
+#orderView .product-grid.list-mode .product-card:not(.has-product-photo){grid-template-columns:minmax(0,1fr) auto}
+#orderView .product-grid.list-mode .product-card{min-height:64px}
+#orderView .cart-line:not(.has-cart-photo){grid-template-columns:minmax(0,1fr) auto}
+#orderView .cart-line:not(.has-cart-photo) h3{grid-column:1}
+#orderView .cart-line:not(.has-cart-photo) .line-total{grid-column:2}
+#orderView .cart-line:not(.has-cart-photo) .cart-unit-price,#orderView .cart-line:not(.has-cart-photo) .qty-control,#orderView .cart-line:not(.has-cart-photo) .service-description{grid-column:1/-1}
+@media(max-width:600px){
+ #orderView .product-grid:not(.list-mode){grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #orderView .product-grid:not(.list-mode) .product-card{min-height:98px;padding:8px 8px 8px 9px;gap:4px;border-radius:10px}
+ #orderView .product-grid:not(.list-mode) .product-card strong{font-size:13px}
+ #orderView .product-grid:not(.list-mode) .product-card .price{font-size:15px}
+ #orderView .product-grid:not(.list-mode) .product-card.has-product-photo .product-details{padding-right:34px}
+ #orderView .product-grid:not(.list-mode) .product-visual,#orderView .product-grid:not(.list-mode) .product-photo{width:29px;height:38px}
+ #orderView .product-card .stock{font-size:9px}
+ #orderView .product-grid.list-mode .product-card:not(.has-product-photo){grid-template-columns:minmax(0,1fr) auto}
+}
+
+/* Larger uploaded photos, with room for names and prices beside them. */
+#orderView .product-grid:not(.list-mode) .product-card.has-product-photo{min-height:128px}
+#orderView .product-grid:not(.list-mode) .product-card.has-product-photo .product-details{padding-right:66px}
+#orderView .product-grid:not(.list-mode) .product-visual,#orderView .product-grid:not(.list-mode) .product-photo{width:60px;height:76px}
+#orderView .product-grid:not(.list-mode) .product-visual{top:23px;right:7px}
+#orderView .product-grid.list-mode .product-card.has-product-photo{grid-template-columns:64px minmax(0,1fr) auto;min-height:78px}
+#orderView .product-grid.list-mode .product-visual,#orderView .product-grid.list-mode .product-photo{width:60px;height:64px}
+@media(max-width:600px){
+ #orderView .product-grid:not(.list-mode) .product-card.has-product-photo{min-height:124px}
+ #orderView .product-grid:not(.list-mode) .product-card.has-product-photo .product-details{padding-right:58px}
+ #orderView .product-grid:not(.list-mode) .product-visual,#orderView .product-grid:not(.list-mode) .product-photo{width:52px;height:70px}
+ #orderView .product-grid:not(.list-mode) .product-visual{top:23px;right:6px}
+}
+
+@media(min-width:901px) and (max-width:1199px){#orderView .catalog.price-keypad-active{grid-template-columns:280px minmax(0,1fr)}}
+
+/* Touch-friendly sale cart. Amounts retain VAT-inclusive pricing. */
+#orderView .cart-panel{padding:0 14px 14px;overflow:hidden;background:linear-gradient(145deg,#f7fbff,#fff 60%);border-color:#c9dceb}
+#orderView .cart-title{order:0;flex-shrink:0;margin:0 -14px;padding:7px 12px;background:linear-gradient(110deg,#07558e,#124a7a);color:#fff;border:0;border-radius:14px 14px 0 0;min-height:56px}
+#orderView .cart-heading-label{display:flex;align-items:center;gap:10px}
+#orderView .cart-heading-label>svg{width:28px;height:28px}
+#orderView .cart-title h2{font-size:21px;color:#fff}
+#orderView #clearCart{display:grid;place-items:center;min-height:44px;width:44px;padding:10px;color:#fff;border-radius:8px}
+#orderView #clearCart:hover{background:#ffffff20}
+#orderView #clearCart svg{width:22px;height:22px}
+#orderView .cart-panel #salesHoldActions{order:9;flex-shrink:0;padding:10px 0 0;margin:0;gap:10px}
+#orderView #salesHoldActions button{min-height:48px;font-size:14px;touch-action:manipulation}
+#orderView .cart-panel #salesHoldBtn{background:#e0e8f1;color:#19344f;border-color:#d4dfeb}
+#orderView .cart-panel #salesResumeBtn{background:#087bd4;color:#fff;border-color:#087bd4}
+#orderView .cart-panel .sale-customer{order:2;padding:8px 0 10px;gap:4px 8px}
+#orderView .sale-customer>small{grid-column:1;grid-row:1;align-self:center;font-size:12px}
+#orderView .sale-customer>div{grid-column:2;grid-row:1;align-self:center}
+#orderView .sale-customer>strong{grid-column:1/-1;grid-row:2;padding:10px 12px;background:#f6faff;border:1px solid #d5e2ee;border-radius:7px;font-size:14px;overflow-wrap:anywhere}
+#orderView .cart-panel .cart-items,#orderView .cart-panel #cartEmpty{order:3;min-height:0}
+#orderView .cart-line{margin:0;padding:12px 0;border:0;border-bottom:1px solid #e1eaf2;border-radius:0;background:transparent;gap:5px 9px;grid-template-columns:48px minmax(0,1fr) auto}
+#orderView .cart-thumb{width:48px;height:54px;grid-row:1/4;display:grid;background:#f0f6fb}
+#orderView .cart-line h3,#orderView .line-total{font-size:14px}
+#orderView .cart-unit-price{font-size:12px}
+#orderView .qty-control{gap:5px;margin-top:3px;align-items:center}
+#orderView .qty-control button{width:46px;min-height:46px;font-size:23px;touch-action:manipulation;border:1px solid #d7e4ef;background:#e8f0f8}
+#orderView .qty-control input{width:60px;min-height:46px;font-size:16px;background:#fff;border-color:#d7e4ef}
+#orderView .qty-control .remove{width:46px;min-height:46px;color:#e32942}
+#orderView .qty-control .remove svg{width:23px;height:23px}
+#orderView .cart-discount-btn{min-height:38px;padding:0 9px;background:#e0f0ff;color:#0763a2;border-radius:6px;touch-action:manipulation}
+#orderView .cart-breakdown{order:4;flex-shrink:0;border-top:1px solid #dce6ef;padding:10px 12px 2px;display:grid;gap:7px;font-size:13px}
+#orderView .cart-breakdown>div{display:flex;justify-content:space-between;gap:12px}
+#orderView .cart-breakdown strong{font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+#orderView #mobileSubtotalRow{display:none}
+#orderView .cart-panel>.cart-vat{order:5;flex-shrink:0;color:#445d76;padding:6px 12px 10px;min-height:28px;font-size:13px}
+#orderView .cart-summary{order:6;flex-shrink:0;background:linear-gradient(110deg,#07558e,#124a7a);color:#fff;border:0;border-radius:8px;padding:12px;margin:0 0 10px;font-size:20px;font-weight:750;gap:8px}
+#orderView .cart-summary strong{color:#fff;font-size:26px;white-space:nowrap}
+#orderView .cart-panel .cart-actions{order:7;flex-shrink:0;gap:8px}
+#orderView #payBtn{display:flex;justify-content:center;align-items:center;gap:10px;min-height:60px;background:linear-gradient(110deg,#16a45b,#21ad68);color:#fff;font-size:21px;border:1px solid #119751;border-radius:9px;box-shadow:0 3px 8px #15965324;touch-action:manipulation}
+#orderView #payBtn svg{width:26px;height:26px}
+#orderView #payBtn:hover:not(:disabled){background:#128e4c}
+#orderView #payBtn:disabled{opacity:.5;box-shadow:none}
+#orderView .cart-panel button:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+@media(max-width:600px){#orderView .cart-panel{padding:0 12px 14px}#orderView .cart-title{margin:0 -12px}#orderView .cart-summary strong{font-size:24px}#orderView .cart-panel .cart-items{overflow:visible;flex:0 0 auto}}
+@media(max-width:600px){.mobile-cart-page #mobileViewCart{background:#16a45b;font-size:18px;min-height:54px}}
+
+/* Desktop register grid; phone sale cards retain their existing controls. */
+.cart-grid-heading,.cart-grid-row{display:none}
+#cartQuantityDialog{max-width:420px}
+#quantityEditorValue{font-size:24px;text-align:center}
+@media(min-width:901px){
+ #orderView.active-view{grid-template-columns:minmax(0,1fr) clamp(520px,44vw,840px)}
+ #orderView .catalog{min-width:0}
+}
+@media(min-width:601px){
+ #orderView .cart-mobile-line{display:none}
+ #orderView .cart-grid-heading,#orderView .cart-grid-row{display:grid;grid-template-columns:minmax(100px,1fr) 62px 90px 96px 68px;align-items:center;gap:8px;padding:7px 2px;border-bottom:1px solid #e1eaf2;font-size:13px}
+ #orderView .cart-grid-heading{position:sticky;top:0;z-index:1;min-height:36px;background:#edf4fa;color:#445d76;font-size:12px;font-weight:700}
+ #orderView .cart-grid-heading>span:nth-child(2){text-align:center}
+ #orderView .cart-grid-heading>span:nth-child(3),#orderView .cart-grid-heading>span:nth-child(4){text-align:right}
+ #orderView .cart-grid-product{min-width:0;display:flex;align-items:center;gap:5px}
+ #orderView .cart-grid-product>strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ #orderView .cart-grid-qty{width:100%;min-height:36px;padding:4px;background:#e0f0ff;color:#075985;border:1px solid #c9dceb;border-radius:6px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+ #orderView .cart-grid-price,#orderView .cart-grid-total{white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+ #orderView .cart-grid-actions{display:flex;justify-content:flex-end;gap:4px}
+ #orderView .cart-grid-actions button{width:30px;min-height:34px;padding:0;font-size:14px;border-radius:5px}
+ #orderView .cart-grid-remove{background:#fff1f2;color:#dc2626;font-size:22px!important}
+ #orderView .cart-grid-description{flex-shrink:0;min-height:32px;padding:0 4px;font-size:11px;color:#075985;background:#e0f0ff}
+}
+
+/* On smaller desktops, put price entry above the catalog to leave room for products. */
+@media(min-width:901px) and (max-width:1199px){
+ #orderView .catalog.price-keypad-active{display:block}
+ #orderView .price-keypad-active #priceEntryPanel{position:static;display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:10px;margin-bottom:12px}
+ #orderView .price-keypad-active .price-entry-row{grid-column:1;grid-row:1;align-self:start}
+ #orderView .price-keypad-active .price-entry p{grid-column:1;grid-row:2;align-self:start;margin:0}
+ #orderView .price-keypad-active .price-entry details{grid-column:2;grid-row:1/3}
+ #orderView .price-keypad-active .price-entry details[open] .price-keypad{gap:6px}
+ #orderView .price-keypad-active .price-keypad button{min-height:44px;font-size:22px;padding:0}
+ #orderView .price-keypad-active #priceEntryAmount{min-height:56px;font-size:26px}
+}
+
+/* Categories use the spare left rail when price entry is disabled. */
+@media(min-width:601px){
+ #orderView .catalog:not(.price-keypad-active){display:grid;grid-template-columns:150px minmax(0,1fr);align-content:start;gap:0 14px}
+ #orderView .catalog:not(.price-keypad-active)>.search-row{grid-column:1/-1;grid-row:1}
+ #orderView .catalog:not(.price-keypad-active)>.catalog-tools{grid-column:1/-1;grid-row:2}
+ #orderView .catalog:not(.price-keypad-active)>.category-list{grid-column:1;grid-row:3/6;display:flex;flex-direction:column;align-self:start;gap:8px;padding:0 10px 0 0;margin-top:12px;border-right:1px solid #e1eaf2;max-height:calc(100dvh - 300px);overflow:auto;position:sticky;top:90px}
+ #orderView .catalog:not(.price-keypad-active)>.category-list .category{flex-shrink:0;width:100%;text-align:left;justify-content:flex-start;white-space:normal;overflow-wrap:anywhere;padding:10px;min-height:48px;border-radius:8px}
+ #orderView .catalog:not(.price-keypad-active)>.product-grid{grid-column:2;grid-row:3;margin-top:12px}
+ #orderView .catalog:not(.price-keypad-active)>#productEmpty{grid-column:2;grid-row:4}
+}
+/* Register keypad: calculator order, editing keys, and quick price presets. */
+:is(#orderView,#mobilePriceDialog) #priceKeypad{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:5px;width:100%;max-width:none;margin:0;padding:0}
+:is(#orderView,#mobilePriceDialog) #priceKeypad>button{grid-column:span 2;min-height:50px;padding:0;border:1px solid #4b5563;border-radius:5px;background:linear-gradient(#363e48,#252c34);color:#fff;box-shadow:0 2px 2px #0f172326;font-size:21px;font-weight:650;touch-action:manipulation}
+:is(#orderView,#mobilePriceDialog) #priceKeypad>button[data-key="0"],:is(#orderView,#mobilePriceDialog) #priceKeypad>button[data-key="enter"]{grid-column:span 3}
+:is(#orderView,#mobilePriceDialog) #priceKeypad>button:hover{background:#485563}
+:is(#orderView,#mobilePriceDialog) #priceKeypad button:active{transform:translateY(1px);box-shadow:none}
+:is(#orderView,#mobilePriceDialog) #priceKeypad button:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+:is(#orderView,#mobilePriceDialog) .price-quick-amounts{grid-column:1/-1;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:5px;margin-top:3px}
+:is(#orderView,#mobilePriceDialog) #priceKeypad .price-quick-amounts button{grid-column:span 3;min-height:38px;padding:0;border:1px solid #008cce;border-radius:5px;background:linear-gradient(#08a8f1,#0087d3);box-shadow:none;color:#fff;font-size:16px;touch-action:manipulation}
+:is(#orderView,#mobilePriceDialog) #priceKeypad .price-quick-amounts button:nth-child(-n+3){grid-column:span 4}
+:is(#orderView,#mobilePriceDialog) #priceKeypad .price-quick-amounts button:hover{background:#007abc}
+@media(min-width:1200px){
+ #orderView .catalog.price-keypad-active{grid-template-columns:250px minmax(0,1fr)}
+}
+@media(min-width:901px) and (max-width:1199px){
+ #orderView .price-keypad-active #priceEntryPanel{grid-template-columns:minmax(0,1fr) 200px}
+ #orderView #priceKeypad>button{min-height:40px;font-size:18px}
+ #orderView #priceKeypad .price-quick-amounts button{min-height:32px;font-size:14px}
+}
+@media(max-width:600px){
+ #mobilePriceDialog #priceKeypad>button{min-height:52px;font-size:23px}
+ #mobilePriceDialog #priceKeypad .price-quick-amounts button{min-height:42px;font-size:17px}
+}
+
+/* Quantity entry keeps unit-sized arrows alongside decimal keypad entry. */
+#cartQuantityDialog{max-height:calc(100dvh - 24px);overflow:auto}
+.quantity-entry{display:flex;min-width:0}
+#quantityEditorValue{min-width:0;min-height:64px;border-radius:9px 0 0 9px;appearance:textfield;-moz-appearance:textfield}
+#quantityEditorValue::-webkit-inner-spin-button,#quantityEditorValue::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.quantity-step-buttons{display:grid;grid-template-rows:1fr 1fr;width:44px;flex-shrink:0;border:1px solid #cbd5e1;border-left:0;border-radius:0 9px 9px 0;overflow:hidden}
+.quantity-step-buttons button{min-height:30px;padding:0;border-radius:0;background:#e8eef5;color:#24354d;font-size:13px;touch-action:manipulation}
+.quantity-step-buttons button+button{border-top:1px solid #cbd5e1}
+#quantityKeypad{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+#quantityKeypad button{grid-column:span 2;min-height:48px;padding:0;border:1px solid #4b5563;border-radius:5px;background:linear-gradient(#363e48,#252c34);color:#fff;font-size:22px;touch-action:manipulation}
+#quantityKeypad [data-key="0"],#quantityKeypad [data-key="enter"]{grid-column:span 3}
+#quantityKeypad button:hover{background:#485563}
+#quantityKeypad [data-key="enter"]{background:#0878bf;border-color:#0878bf}
+#quantityKeypad button:focus-visible,.quantity-step-buttons button:focus-visible{outline:3px solid #f59e0b;outline-offset:-3px}
+
+/* Approved Compact product cards: clear cart counts, photos, and prices. */
+#orderView #productList:not(.list-mode){grid-template-columns:repeat(auto-fill,minmax(min(100%,160px),1fr));gap:8px}
+#orderView #productList .product-card{display:flex;flex-direction:column;justify-content:flex-start;min-height:138px;padding:9px;gap:6px;border:1px solid #d8e3ed;border-radius:10px;background:#fff;box-shadow:0 3px 12px #18344a0a}
+#orderView #productList .product-card:hover{border-color:#75b9e6;box-shadow:0 4px 14px #18344a12}
+#orderView #productList .product-card.mobile-selected{border:1px solid #0878bf;background:#fff;box-shadow:0 0 0 1px #0878bf15}
+#orderView #productList .product-card-top{display:flex;justify-content:flex-end;min-height:20px}
+#orderView #productList .mobile-product-count{position:static;display:inline-flex;align-items:center;justify-content:center;min-width:0;height:auto;padding:3px 6px;border-radius:7px;background:#e6f3ff;color:#086fb8;font-size:11px;font-weight:650;line-height:1.3;white-space:nowrap}
+#orderView #productList .product-card-main{display:flex;align-items:center;gap:8px;min-height:54px;min-width:0}
+#orderView #productList .product-visual{position:static;display:grid;place-items:center;flex:0 0 54px;width:54px;height:54px;margin:0;padding:0;overflow:hidden;border-radius:12px;background:#f4f8fc}
+#orderView #productList .product-photo{width:54px;height:54px;padding:0;border-radius:12px;object-fit:contain;background:transparent}
+#orderView #productList .product-placeholder{color:#70859a}
+#orderView #productList .stock-service{color:#536b82}
+#orderView #productList .product-placeholder svg{width:26px;height:26px;padding:0;background:transparent;border-radius:0}
+#orderView #productList .product-details{padding:0;min-width:0;flex:1}
+#orderView #productList .product-details strong{font-size:14px;line-height:1.3;font-weight:650;overflow-wrap:anywhere;color:#172b40}
+#orderView #productList .product-details small{font-size:11px;line-height:1.4;color:#536b82;margin-top:4px;overflow-wrap:anywhere}
+#orderView #productList .product-card footer{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px;margin-top:auto;padding:7px 0 0;border-top:1px solid #e2eaf2}
+#orderView #productList .price{font-size:17px;line-height:1.2;font-weight:750;color:#086fb8;white-space:nowrap}
+#orderView #productList .product-price-currency{font-size:11px;letter-spacing:.3px;font-weight:650}
+#orderView #productList .stock{font-size:11px;line-height:1.4;font-weight:400;padding:0;background:transparent;color:#536b82;border-radius:0;overflow-wrap:anywhere}
+#orderView #productList.list-mode .product-card{display:grid;grid-template-columns:minmax(0,1fr) auto;min-height:94px;gap:6px 12px;padding:12px}
+#orderView #productList.list-mode .product-card-main{grid-column:1;grid-row:1/3;min-height:60px}
+#orderView #productList.list-mode .product-visual,#orderView #productList.list-mode .product-photo{width:60px;height:60px;flex-basis:60px}
+#orderView #productList.list-mode .product-card-top{grid-column:2;grid-row:1;min-height:0}
+#orderView #productList.list-mode .product-card footer{grid-column:2;grid-row:2;flex-direction:column;align-items:flex-end;margin:0;padding:0;border:0}
+@media(max-width:600px){
+ #orderView #productList:not(.list-mode){grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #orderView #productList:not(.list-mode) .product-card{padding:9px;gap:6px;min-height:138px}
+ #orderView #productList:not(.list-mode) .product-card-main{flex-direction:row;align-items:center;gap:7px}
+ #orderView #productList .product-details strong{font-size:14px}
+ #orderView #productList .price{font-size:17px}
+ #orderView #productList .product-visual,#orderView #productList .product-photo{width:48px;height:48px;flex-basis:48px}
+ #orderView #productList .product-card footer{align-items:flex-start;flex-direction:column;gap:5px}
+}
+
+.next-item-price{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 12px;padding:10px 12px;background:#e6f3ff;border:1px solid #a7d6f5;border-radius:8px;color:#075985;font-size:15px}
+.next-item-price button{min-height:32px;padding:0 10px;background:#fff;color:#075985}
+.next-item-price.invalid-price{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
+#orderView .catalog.price-keypad-active #nextItemPrice{grid-column:2;grid-row:4}
+#orderView .catalog.price-keypad-active #productList{grid-row:5}
+#orderView .catalog.price-keypad-active #productEmpty{grid-row:6}
+#orderView .catalog.price-keypad-active #priceEntryPanel{grid-row:1/7}
+#orderView .sale-customer{display:flex;align-items:center;gap:10px;padding:10px 0;min-width:0}
+#orderView .sale-customer>small{display:none}
+#orderView .sale-customer>strong{flex:1;min-width:0;margin:0;padding:0;border:0;background:transparent;border-radius:0;font-size:14px;overflow-wrap:anywhere}
+#orderView .sale-customer>div{display:flex;flex-shrink:0;gap:8px}
+#orderView .sale-customer .link-btn{font-size:12px}
+#orderView .cart-edit-price{min-height:36px;padding:4px;background:#e6f3ff;color:#075985;border:1px solid #c9dceb;border-radius:6px;font-size:12px;font-weight:650}
+#orderView .mobile-edit-price{min-height:32px}
+#orderView .cart-grid-actions svg{width:19px;height:19px;vertical-align:middle}
+#orderView .cart-grid-actions .cart-grid-remove{font-size:14px!important}
+#orderView .cart-added{background:#ddf7e9;box-shadow:inset 3px 0 #16a45b;transition:background .2s}
+.sale-shortcut{font:600 11px 'Segoe UI',sans-serif;padding:2px 4px;border:1px solid #ffffff70;border-radius:4px;margin-left:5px;opacity:.85}
+#cartPriceDialog,#clearCartDialog{max-width:420px;max-height:calc(100dvh - 24px);overflow:auto}
+#cartPriceValue{font-size:24px;text-align:center}
+#cartPriceError:empty{display:none}
+#cartPriceKeypad{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+#cartPriceKeypad button{grid-column:span 2;min-height:48px;padding:0;background:linear-gradient(#363e48,#252c34);color:#fff;border:1px solid #4b5563;border-radius:5px;font-size:22px;touch-action:manipulation}
+#cartPriceKeypad [data-key="0"],#cartPriceKeypad [data-key="enter"]{grid-column:span 3}
+#cartPriceKeypad [data-key="enter"]{background:#0878bf;border-color:#0878bf}
+#confirmClearCart{background:#dc2626;color:#fff}
+@media(max-width:600px){.sale-shortcut{display:none}.next-item-price{font-size:14px}.next-item-price strong{min-width:0;overflow-wrap:anywhere}}
+@media(prefers-reduced-motion:reduce){#orderView .cart-added{transition:none}}
+
+/* Keep long product names from enlarging an entire grid row. */
+#orderView #productList:not(.list-mode) .product-card{height:150px;min-height:150px}
+#orderView #productList:not(.list-mode) .product-details strong{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#orderView #productList:not(.list-mode) .product-details small{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+
+/* Products without uploaded photos use the full card width for their names. */
+#orderView #productList:not(.list-mode) .product-card:not(.has-product-photo){height:auto;min-height:150px}
+#orderView #productList .product-card:not(.has-product-photo) .product-card-main{width:100%;flex:1}
+#orderView #productList .product-card:not(.has-product-photo) .product-details{width:100%}
+#orderView #productList .product-card:not(.has-product-photo) .product-details strong{display:block;-webkit-line-clamp:unset;-webkit-box-orient:initial;overflow:visible;white-space:normal;overflow-wrap:anywhere}
+
+/* Keep search and catalog controls on one compact desktop toolbar. */
+#catalogDisplayMenu{position:relative;flex-shrink:0}
+#catalogDisplayMenu>summary{display:flex;align-items:center;justify-content:center;gap:5px;min-height:44px;padding:0 10px;list-style:none;border:1px solid #dbe4ee;border-radius:9px;background:#edf2f7;color:#075985;cursor:pointer}
+#catalogDisplayMenu>summary::-webkit-details-marker{display:none}
+#catalogDisplayMenu>summary svg{width:19px;height:19px}
+#catalogDisplayMenu>.catalog-display-options{position:absolute;top:calc(100% + 6px);right:0;z-index:8;display:grid;gap:9px;width:190px;padding:12px;border:1px solid #dbe4ee;border-radius:10px;background:#fff;box-shadow:0 8px 24px #18344a24}
+#catalogDisplayMenu #productCount{font-size:12px;color:#536b82}
+#catalogDisplayMenu .view-switch{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#catalogDisplayMenu button{min-height:38px;padding:0 10px;font-size:12px;background:#edf2f7;color:#24354d}
+#catalogDisplayMenu button[aria-pressed="true"]{background:#075985;color:#fff}
+#catalogDisplayMenu #clearSearch{width:100%;text-align:left}
+@media(min-width:601px){
+ #orderView .search-row{align-items:center;gap:7px;margin-bottom:6px;padding:0;top:0}
+ #orderView .search-row>.catalog-tools{display:block;margin:0;padding:0;border:0;flex:0 0 auto}
+ #orderView .search-row .search-box{min-width:0}
+ #orderView .search-row #searchBtn{padding:0 12px;font-size:13px;white-space:nowrap}
+ #orderView .search-row #scanBarcodeBtn{padding:0 12px;font-size:13px}
+ #orderView .search-row .sale-shortcut{display:none}
+ #orderView .catalog.price-keypad-active>.category-list{grid-row:2}
+ #orderView .catalog.price-keypad-active #nextItemPrice{grid-row:3}
+ #orderView .catalog.price-keypad-active #productList{grid-row:4}
+ #orderView .catalog.price-keypad-active #productEmpty{grid-row:5}
+ #orderView .catalog.price-keypad-active #priceEntryPanel{grid-row:1/6}
+ #orderView .catalog:not(.price-keypad-active)>.category-list{grid-row:2/5;margin-top:6px}
+ #orderView .catalog:not(.price-keypad-active)>#productList{grid-row:2;margin-top:6px}
+ #orderView .catalog:not(.price-keypad-active)>#productEmpty{grid-row:3}
+}
+
+/* The keypad rail must not stretch empty rows between the search and products. */
+@media(min-width:1200px){
+ #orderView .catalog.price-keypad-active{display:block;position:relative;--price-rail-width:clamp(250px,20vw,280px);padding-left:calc(var(--price-rail-width) + 30px);min-height:max(580px,calc(100vh - 188px))}
+ #orderView .catalog.price-keypad-active #priceEntryPanel{position:absolute;top:16px;left:16px;width:var(--price-rail-width);margin:0}
+}
+
+/* Dense sale buttons: reserve space only for content that is present. */
+#orderView #productList:not(.list-mode) .product-card{height:auto;min-height:104px;padding:8px;gap:6px}
+#orderView #productList:not(.list-mode) .product-card:not(.has-product-photo){height:auto;min-height:88px}
+#orderView #productList:not(.list-mode) .product-card-top{min-height:0}
+#orderView #productList:not(.list-mode) .product-card-top:not(:has(.mobile-product-count:not([hidden]))){display:none}
+#orderView #productList:not(.list-mode) .mobile-product-count{padding:2px 5px}
+#orderView #productList:not(.list-mode) .product-card:not(.has-product-photo) .product-card-main{flex:0 0 auto;min-height:30px;align-items:flex-start}
+#orderView #productList:not(.list-mode) .product-card footer{padding-top:6px;gap:3px}
+#orderView #productList:not(.list-mode) .product-details small{margin-top:2px}
+
+/* Persistent product selection is visible across the entire button. */
+#orderView #productList .product-card.mobile-selected{background:#e8f4ff;border-color:#0878bf;box-shadow:0 0 0 1px #0878bf40}
+#orderView #productList .product-card.mobile-selected .mobile-product-count{min-width:22px;background:#0878bf;color:#fff;text-align:center;border-radius:5px}
+
+/* Dense product list: name, quantity, and price share one row. */
+#orderView #productList.list-mode{gap:4px}
+#orderView #productList.list-mode .product-card{grid-template-columns:minmax(0,1fr) auto auto;min-height:56px;padding:7px 10px;gap:8px;border-radius:8px}
+#orderView #productList.list-mode .product-card-main{grid-column:1;grid-row:1;min-height:40px;gap:8px}
+#orderView #productList.list-mode .product-visual,#orderView #productList.list-mode .product-photo{width:40px;height:40px;flex-basis:40px;border-radius:6px}
+#orderView #productList.list-mode .product-card-top{grid-column:2;grid-row:1;align-self:center;min-height:0}
+#orderView #productList.list-mode .product-card-top:not(:has(.mobile-product-count:not([hidden]))){display:none}
+#orderView #productList.list-mode .mobile-product-count{padding:2px 5px;font-size:11px}
+#orderView #productList.list-mode .product-card footer{grid-column:3;grid-row:1;align-self:center;gap:2px}
+#orderView #productList.list-mode .price{font-size:16px}
+#orderView #productList.list-mode .product-details strong{font-size:14px}
+#orderView #productList.list-mode .product-details small{margin-top:2px}
+
+/* Keep clearing the search directly beside Scan on desktop and mobile. */
+#orderView #clearSearch{flex-shrink:0;min-height:44px;width:auto;padding:0 10px;font-size:12px;white-space:nowrap}
+#clearSearch .clear-search-icon{display:none;width:18px;height:18px}
+@media(min-width:601px) and (max-width:1199px){#clearSearch .clear-search-extra{display:none}}
+@media(max-width:600px){
+ #orderView #clearSearch{display:grid;place-items:center;padding:0;width:36px}
+ #clearSearch .clear-search-label{display:none}
+ #clearSearch .clear-search-icon{display:block}
+ #orderView .mobile-catalog-tools{gap:6px}
+}
+
+/* The item-price prompt sits inside the centered entry field. */
+#orderView .price-keypad-active #priceEntryAmount,#mobilePriceDialog #priceEntryAmount{text-align:center}
+#orderView .price-keypad-active #priceEntryAmount::placeholder,#mobilePriceDialog #priceEntryAmount::placeholder{text-align:center}
+
+/* Camera scanning is available in the mobile layout only. */
+@media(min-width:601px){#scanBarcodeBtn{display:none!important}}
+
+/* Keep sale tools in the header and totals together on the right. */
+#orderView .cart-title{align-items:center;gap:8px}
+#orderView .cart-header-actions{display:flex;align-items:center;gap:2px;flex-shrink:0}
+#orderView .cart-title #salesHoldActions{display:flex;align-items:center;gap:2px;padding:0;margin:0;order:0}
+#orderView .cart-title #salesHoldActions[hidden]{display:none}
+#orderView .cart-title #salesHoldActions button{display:grid;place-items:center;width:44px;min-height:44px;padding:10px;border:0;border-radius:8px;background:transparent;color:#fff}
+#orderView .cart-title #salesHoldActions button:hover:not(:disabled){background:#ffffff20}
+#orderView .cart-title #salesHoldActions button:disabled{opacity:.4}
+#orderView .cart-title #salesHoldActions svg{width:22px;height:22px}
+#orderView .cart-breakdown>div,#orderView .cart-panel>.cart-vat{display:grid;grid-template-columns:max-content minmax(96px,max-content);justify-content:end;align-items:center;column-gap:18px}
+#orderView .cart-breakdown>div>span,#orderView .cart-panel>.cart-vat>span{text-align:right}
+#orderView .cart-breakdown>div>strong{text-align:right}
+#orderView .cart-summary{justify-content:flex-end;gap:24px}
+
+/* Notifications stay at the top, clear of checkout and cart totals. */
+#toast{top:calc(12px + env(safe-area-inset-top,0px));bottom:auto;left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:min(430px,calc(100% - 24px));font-size:14px;overflow-wrap:anywhere}
+
+/* The first product rows reserve the keypad; later rows use the full catalog. */
+@media(min-width:1200px){
+ #orderView .catalog.price-keypad-active #productList.keypad-wrap:not(.list-mode){width:calc(100% + var(--price-rail-width) + 14px);margin-left:calc(-1 * (var(--price-rail-width) + 14px));grid-template-columns:repeat(2,calc((var(--price-rail-width) - 2px)/2)) repeat(auto-fill,minmax(160px,1fr));grid-auto-rows:minmax(104px,auto)}
+ #orderView .catalog.price-keypad-active #productList.keypad-wrap:not(.list-mode)::before{content:"";grid-column:1 / span 2;grid-row:1 / span var(--keypad-reserved-rows);pointer-events:none}
+}
+
+/* Center the cart's summary groups while retaining aligned amounts. */
+#orderView .cart-breakdown>div,#orderView .cart-panel>.cart-vat{grid-template-columns:90px minmax(96px,max-content);justify-content:center}
+#orderView .cart-summary{justify-content:center}
+
+/* Compact payment choices and a keypad beside the amount workflow. */
+#paymentDialog{width:min(640px,calc(100% - 20px))}
+#paymentForm .payment-header{display:flex;align-items:center;gap:12px;padding-bottom:12px;border-bottom:1px solid #dbe5ef}
+#paymentForm .payment-header .payment-logo{width:48px;height:48px;flex-shrink:0}
+#paymentForm .payment-header h2{font-size:20px}
+#paymentForm .payment-header p{font-size:12px}
+#paymentForm .payment-due{margin-left:auto;text-align:right;display:grid;gap:4px}
+#paymentForm .payment-due small{font-size:12px;color:#64748b}
+#paymentForm .payment-due strong{font-size:24px;color:#075985;white-space:nowrap}
+#paymentForm .payment-method-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+#paymentForm .payment-choice{min-height:76px;padding:8px 4px;gap:4px}
+#paymentForm .payment-choice svg{width:25px;height:25px;stroke-width:1.8}
+#paymentForm .payment-choice strong{font-size:13px}
+#paymentForm .payment-choice small{font-size:10px}
+#paymentAmount{font-size:24px;text-align:right;font-variant-numeric:tabular-nums}
+#paymentForm .payment-keypad{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+#paymentForm .payment-keypad[hidden]{display:none}
+#paymentKeypad button{min-height:44px;padding:5px;background:#edf3f8;color:#18324c;font-size:20px;border:1px solid #d4e1ed;border-radius:7px;touch-action:manipulation}
+#paymentKeypad .keypad-action{background:#dcecf9;color:#075985;font-size:15px}
+#paymentKeypad [data-amount-key="done"]{background:#0878bf;color:white}
+#paymentForm #addPayment{min-height:40px;background:#e9f3fa;color:#075985}
+@media(max-width:480px){
+ #paymentForm .payment-method-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #paymentForm .payment-choice{display:grid;grid-template-columns:24px 1fr;min-height:54px;gap:2px 6px;text-align:left;padding:7px 10px}
+ #paymentForm .payment-choice svg{grid-row:1/3}
+ #paymentForm .payment-choice small{grid-column:2}
+ #paymentForm .payment-header{flex-wrap:wrap;gap:8px}
+ #paymentForm .payment-header .payment-logo{width:40px;height:40px}
+ #paymentForm .payment-header h2{font-size:18px}
+ #paymentForm .payment-due{flex:1 0 100%;display:flex;justify-content:space-between;align-items:center}
+ #paymentForm .payment-due strong{font-size:24px}
+}
+
+/* Complete payment uses the same green action as Checkout. */
+#paymentForm #confirmPayment{background:linear-gradient(110deg,#16a45b,#21ad68);color:#fff;border:1px solid #119751;box-shadow:0 3px 8px #15965324}
+#paymentForm #confirmPayment:hover:not(:disabled){background:#128e4c}
+#paymentForm #confirmPayment:disabled{opacity:.5;box-shadow:none}
+
+/* Payment colours remain consistent when a method is selected. */
+#paymentForm [data-payment="CASH"]{--payment-color:#15803d;--payment-tint:#ecfdf3;--payment-border:#86cda3}
+#paymentForm [data-payment="MPAISA"]{--payment-color:#c62828;--payment-tint:#fff1f2;--payment-border:#f3a5ac}
+#paymentForm [data-payment="MYCASH"]{--payment-color:#c2410c;--payment-tint:#fff4eb;--payment-border:#f8b789}
+#paymentForm [data-payment="CHEQUE"]{--payment-color:#475569;--payment-tint:#f1f5f9;--payment-border:#aebdcd}
+#paymentForm [data-payment="EFTPOS"]{--payment-color:#0369a1;--payment-tint:#eff8ff;--payment-border:#8dc4ec}
+#paymentForm [data-payment="CARD"]{--payment-color:#6d28d9;--payment-tint:#f5f0ff;--payment-border:#c4a5f4}
+#paymentForm [data-payment="VOUCHER"]{--payment-color:#92400e;--payment-tint:#fffbeb;--payment-border:#e8c36a}
+#paymentForm [data-payment="EBANKING"]{--payment-color:#0f766e;--payment-tint:#effcf9;--payment-border:#83cfc3}
+#paymentForm .payment-choice{background:var(--payment-tint);color:var(--payment-color);border-color:var(--payment-border)}
+#paymentForm .payment-choice:hover:not(:disabled){background:var(--payment-tint);border-color:var(--payment-color);filter:brightness(.97)}
+#paymentForm .payment-choice[aria-pressed="true"]{background:var(--payment-color);color:#fff;border-color:var(--payment-color);box-shadow:inset 0 0 0 2px #fff,0 0 0 1px var(--payment-color)}
+#paymentForm .payment-choice[aria-pressed="true"]:hover:not(:disabled){background:var(--payment-color)}
+#paymentForm .payment-choice:focus-visible{outline:3px solid #172b40;outline-offset:3px}
+
+#paymentForm .payment-surcharge-summary{display:grid;gap:6px;padding:10px 12px;border:1px solid #dbe4ef;background:#f5f8fc;border-radius:8px;font-size:13px}
+#paymentForm .payment-surcharge-summary[hidden]{display:none}
+#paymentForm .payment-surcharge-summary>div{display:flex;justify-content:space-between;gap:12px}
+#paymentForm .payment-surcharge-summary>div:last-child{border-top:1px solid #dbe4ef;padding-top:6px;font-weight:750}
+#paymentForm #paymentCardCharge{color:#075985;font-weight:700;font-size:13px}
+
+/* Payment dialog: clear hierarchy, aligned figures, and compact touch targets. */
+#paymentDialog{border:1px solid #dce5ee;border-radius:18px;box-shadow:0 24px 80px #102a4350}
+#paymentForm{padding:20px 22px;gap:14px;color:#172b40}
+#paymentForm .payment-header{padding-bottom:16px;gap:12px}
+#paymentForm .payment-header h2{font-size:21px;letter-spacing:-.3px;color:#142d45}
+#paymentForm .payment-header p{margin-top:4px;color:#64748b;font-size:12px}
+#paymentForm .payment-due{padding:9px 12px;background:#edf7fd;border:1px solid #d8eaf5;border-radius:10px;gap:2px}
+#paymentForm .payment-due strong{font-size:25px;font-variant-numeric:tabular-nums;letter-spacing:-.4px}
+#paymentForm .payment-methods legend{margin-bottom:8px;color:#334a60;font-size:12px;font-weight:700}
+#paymentForm .payment-choice{min-height:70px;border-width:1px;border-radius:10px;gap:3px;box-shadow:none}
+#paymentForm .payment-choice svg{width:23px;height:23px}
+#paymentForm .payment-choice strong{font-size:13px;font-weight:750}
+#paymentForm .payment-choice small{font-size:10px;font-weight:400}
+#paymentForm .payment-choice[aria-pressed="true"]{box-shadow:inset 0 0 0 2px #fff,0 0 0 1px var(--payment-color)}
+#paymentForm .payment-tick{top:5px;right:7px;font-size:13px}
+#paymentForm .payment-adjustments{padding:10px 12px;background:#f7f9fc;border:1px solid #e1e8f0;border-radius:10px}
+#paymentForm .payment-adjustments:not(:has(>div:not([hidden]))){display:none}
+#paymentForm .payment-adjustments>.payment-surcharge-summary{padding:0;background:none;border:0;border-radius:0;gap:7px;font-size:12px;color:#53667a}
+#paymentForm .payment-adjustments strong{color:#243d53;font-variant-numeric:tabular-nums;white-space:nowrap}
+#paymentForm .payment-adjustments:has(#paymentRoundingSummary:not([hidden])) #paymentSurchargeSummary>div:last-child{display:none}
+#paymentForm .payment-adjustments:has(#paymentSurchargeSummary:not([hidden])) #paymentRoundingSummary{margin-top:7px}
+#paymentForm .payment-adjustments>div>div:last-child{color:#172b40;padding-top:8px}
+#paymentForm label{font-size:12px;font-weight:650;color:#334a60;gap:6px}
+#paymentForm input,#paymentForm select{border-color:#cbd8e5;border-radius:9px;min-height:44px;box-shadow:none}
+#paymentForm input:focus,#paymentForm select:focus{border-color:#0782c4;box-shadow:0 0 0 3px #0782c418;outline:none}
+#paymentForm #paymentAmount{height:56px;font-size:28px;font-weight:750;color:#142d45;background:#fbfdff;padding:8px 14px;letter-spacing:.3px}
+#paymentForm #paymentReference{font-size:13px;font-weight:400}
+#paymentForm #paymentReference::placeholder{color:#7b8c9e;font-weight:400}
+#paymentForm #addPayment{justify-self:start;width:auto;padding:0 12px;min-height:36px;border:1px solid #ccdfeb;background:#f5faff;border-radius:8px;font-size:12px;box-shadow:none}
+#paymentForm #addPayment::before{content:'+';font-size:17px;margin-right:6px;font-weight:500}
+#paymentForm .payment-parts-heading{margin:0 0 7px;font-size:12px;color:#64748b;font-weight:650}
+#paymentForm .split-payment-row{gap:10px;padding:8px 10px;background:#f7fafc;border:1px solid #e1e8f0;border-radius:8px;margin-top:5px;font-size:13px}
+#paymentForm .split-payment-row strong{font-size:13px;font-weight:650;min-width:0;overflow-wrap:anywhere}
+#paymentForm .split-payment-row span{white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:650}
+#paymentForm .split-payment-row button{background:white;border:1px solid #dbe4ee;color:#6a4250;min-height:32px;font-weight:500;font-size:11px;border-radius:6px}
+#paymentForm #paymentChange{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 12px;background:#ecf8f1;border:1px solid #d4eadc;color:#17633b;border-radius:9px;font-size:13px;font-weight:500}
+#paymentForm #paymentChange strong{font-size:18px;white-space:nowrap;font-variant-numeric:tabular-nums}
+#paymentForm #paymentChange[data-status="remaining"]{background:#eff7fd;border-color:#d8e9f6;color:#175b85}
+#paymentForm #paymentChange[data-status="overpaid"]{background:#fff7ed;border-color:#ffdfba;color:#9a4a0a}
+#paymentForm .dialog-actions{display:grid;grid-template-columns:1fr 2fr;position:sticky;bottom:-20px;padding:12px 0 2px;border-top:1px solid #e3eaf1;background:#fff;gap:10px;margin-top:0;z-index:1}
+#paymentForm .dialog-actions button{min-height:44px;font-size:14px;border-radius:9px}
+#paymentForm #cancelPayment{background:#f0f4f8;color:#40566c;border:1px solid #e0e7ef;box-shadow:none}
+@media(max-width:480px){
+ #paymentDialog{width:calc(100% - 16px);border-radius:14px;max-height:calc(100dvh - 16px)}
+ #paymentForm{padding:16px;gap:12px}
+ #paymentForm .payment-header{gap:8px;padding-bottom:12px}
+ #paymentForm .payment-header h2{font-size:18px}
+ #paymentForm .payment-header p{font-size:11px}
+ #paymentForm .payment-header .payment-logo{width:36px;height:36px}
+ #paymentForm .payment-due{padding:9px 11px;margin-top:3px}
+ #paymentForm .payment-choice{min-height:52px;padding:7px 10px;gap:2px 7px}
+ #paymentForm .payment-choice strong{font-size:12px}
+ #paymentForm .payment-choice .payment-tick{top:4px;right:5px;font-size:11px}
+ #paymentForm #paymentAmount{height:52px;font-size:26px}
+ #paymentForm .dialog-actions{bottom:-16px;padding-bottom:2px}
+ #paymentForm .split-payment-row{gap:7px}
+}
+
+/* Keep the final actions outside the scrolling payment content. */
+#paymentDialog{overflow:hidden;max-height:calc(100dvh - 20px)}
+#paymentForm{display:flex;flex-direction:column;padding:0;gap:0;max-height:calc(100dvh - 22px);overflow:hidden}
+#paymentForm .payment-scroll{display:grid;gap:10px;padding:14px 16px 10px;overflow:auto;min-height:0;overscroll-behavior:contain}
+#paymentForm .dialog-actions{position:static;flex-shrink:0;padding:12px 22px 16px;margin:0;border-top:1px solid #dce5ee;box-shadow:0 -5px 14px #19394b08;background:#fff}
+#paymentForm .payment-entry-workspace{display:grid;gap:8px;min-width:0}
+#paymentForm .payment-header{padding-bottom:10px;gap:10px}
+#paymentForm .payment-header .payment-logo{width:36px;height:36px}
+#paymentForm .payment-header h2{font-size:19px}
+#paymentForm .payment-due{padding:5px 10px}
+#paymentForm .payment-due strong{font-size:22px}
+#paymentForm .payment-choice{display:grid;grid-template-columns:22px 1fr;min-height:52px;padding:6px 8px;gap:1px 6px;text-align:left}
+#paymentForm .payment-choice svg{grid-row:1/3;width:22px;height:22px}
+#paymentForm .payment-choice small{grid-column:2}
+#paymentForm .payment-methods legend{margin-bottom:5px}
+#paymentForm #paymentAmount{height:48px;font-size:26px}
+#paymentForm #paymentChange{padding:7px 10px}
+#paymentForm .dialog-actions{padding:10px 16px}
+#paymentForm .split-payment-row{padding:4px 8px;margin-top:0;min-height:44px}
+@media(min-width:720px){
+ #paymentDialog:has(#paymentKeypad:not([hidden])){width:min(700px,calc(100% - 24px))}
+ #paymentForm .payment-entry-workspace:has(#paymentKeypad:not([hidden])){grid-template-columns:minmax(0,1fr) 240px;column-gap:18px;align-items:start;grid-auto-flow:row dense}
+ #paymentForm .payment-entry-workspace:has(#paymentKeypad:not([hidden]))>:not(#paymentKeypad){grid-column:1}
+ #paymentForm .payment-entry-workspace #paymentKeypad:not([hidden]){grid-column:2;grid-row:1/span 6;align-self:start;padding-top:18px}
+ #paymentForm #paymentKeypad button{min-height:42px}
+ #paymentParts:not(:empty){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ #paymentParts .payment-parts-heading{grid-column:1/-1;margin:0}
+ #paymentForm .payment-entry-workspace:not(:has(#paymentKeypad:not([hidden]))){grid-template-columns:repeat(2,minmax(0,1fr));align-items:end}
+ #paymentForm .payment-entry-workspace:not(:has(#paymentKeypad:not([hidden]))) #paymentCardCharge,
+ #paymentForm .payment-entry-workspace:not(:has(#paymentKeypad:not([hidden]))) #offlinePaymentConfirmation{grid-column:1/-1}
+}
+@media(max-width:480px){
+ #paymentDialog{max-height:calc(100dvh - 16px)}
+ #paymentForm{max-height:calc(100dvh - 18px)}
+ #paymentForm .payment-scroll{padding:12px;gap:9px}
+ #paymentForm .dialog-actions{padding:10px 16px 12px}
+}
+
+/* Dashboard palette: consistent colours distinguish each business measure. */
+#dashboardView{background:#f7faff;border-color:#d9e5f2;overflow:hidden;box-shadow:0 5px 22px #17436b08}
+#dashboardView>.section-header{background:linear-gradient(115deg,#104b80,#086a9b 65%,#087f8c);border:0;padding:22px 24px;color:white}
+#dashboardView>.section-header h2{color:#fff;font-size:24px;letter-spacing:-.4px}
+#dashboardView>.section-header p{color:#d7edf9;margin-top:5px}
+#dashboardView>.section-header .close-operation-view{color:#fff;background:#ffffff18;border:1px solid #ffffff55;box-shadow:none}
+#dashboardView>.section-header .close-operation-view:hover{background:#ffffff30}
+#dashboardView .report-filters{background:#edf5fd;border-color:#d8e7f5;padding:18px 24px}
+#dashboardView .report-filters label{color:#294d70;font-size:12px;font-weight:650}
+#dashboardView .report-filters input,#dashboardView .report-filters select{background:#fff;border-color:#c5d9ed;box-shadow:0 2px 5px #244c7010}
+#dashboardView .report-filter-actions .primary{background:#0776b5;box-shadow:0 3px 8px #0878bf20}
+#dashboardView [data-report-today]{background:#d5f2e9;color:#12634c;border:1px solid #b5e5d5}
+#dashboardView [data-report-month]{background:#e9e1fb;color:#6240a2;border:1px solid #d4c4f4}
+#dashboardView .report-status:not(.error){color:#52718d}
+#dashboardView .report-kpi{--metric:#116da5;--metric-ink:#0c456b;--metric-border:#3b94c9;background:linear-gradient(120deg,var(--metric-ink),var(--metric));border:1px solid var(--metric);border-top:4px solid var(--metric-border);border-radius:12px;padding:16px;gap:12px;box-shadow:0 4px 12px #17365020}
+#dashboardView .report-kpi:nth-child(2){--metric:#b82f52;--metric-ink:#881c3d;--metric-border:#e6708b}
+#dashboardView .report-kpi:nth-child(3){--metric:#107654;--metric-ink:#064e3b;--metric-border:#3cba8f}
+#dashboardView .report-kpi:nth-child(4){--metric:#7042b6;--metric-ink:#4c2585;--metric-border:#a282e2}
+#dashboardView .report-kpi:nth-child(5){--metric:#9a5a0a;--metric-ink:#713d08;--metric-border:#e4a443}
+#dashboardView .report-kpi:nth-child(6){--metric:#0c747e;--metric-ink:#084d58;--metric-border:#42b4bf}
+#dashboardView .report-kpi small{color:#eaf3fa;font-weight:650;font-size:12px}
+#dashboardView .report-kpi strong{color:#fff;font-size:23px;font-variant-numeric:tabular-nums;letter-spacing:-.4px}
+#dashboardView .report-panel{background:#fff;border-color:#dbe7f3;box-shadow:0 3px 12px #1f456606;padding:0 16px 16px;overflow:hidden}
+#dashboardView .report-panel h3{padding:14px 16px;margin:0 -16px 16px;background:#eaf4ff;color:#135783;border-bottom:1px solid #d2e7fa;border-left:4px solid #1488c4;font-size:15px}
+#dashboardView .report-panel:nth-child(2) h3{background:#e8f7f0;color:#17664b;border-color:#ceeadd;border-left-color:#1ca575}
+#dashboardView .sales-day{padding:9px 0;border-bottom:1px solid #edf3f9}
+#dashboardView .sales-day strong{color:#17664b}
+#dashboardView .sales-day-track{background:#e7f1fb;height:13px}
+#dashboardView .sales-day-track i{background:linear-gradient(90deg,#1689d2,#15b4ad)}
+#dashboardView .sales-day-track i.negative{background:linear-gradient(90deg,#e95772,#c92b51)}
+#dashboardView .sales-day:has(i.negative) strong{color:#aa2447}
+#dashboardView #dashboardProducts th{background:#eaf4f0;color:#24654f;border-bottom-color:#cce5d9;font-size:11px;letter-spacing:.3px}
+#dashboardView #dashboardProducts tbody tr:nth-child(even){background:#f5faf8}
+#dashboardView #dashboardProducts tbody tr:hover{background:#e6f5f0}
+#dashboardView #dashboardProducts td{border-bottom-color:#e0ece6;color:#304f64}
+#dashboardView #dashboardProducts td:last-child{color:#137050}
+#dashboardView #dashboardProducts td:nth-child(2),#dashboardView #dashboardProducts th:nth-child(2){text-align:center}
+#dashboardView #dashboardProducts td:last-child,#dashboardView #dashboardProducts th:last-child{text-align:right}
+@media(max-width:600px){
+ #dashboardView>.section-header{padding:16px}
+ #dashboardView>.section-header h2{font-size:21px}
+ #dashboardView .report-filters{padding:12px}
+ #dashboardView .report-kpi{padding:12px;gap:9px}
+ #dashboardView .report-kpi strong{font-size:19px}
+ #dashboardView .report-panel{padding:0 12px 12px}
+ #dashboardView .report-panel h3{margin:0 -12px 12px;padding:12px}
+}
+
+#orderView .cart-title #salesMoreBtn{background:transparent;color:white;border:0}#orderView .cart-title #salesMoreBtn:hover{background:#ffffff20}@media(max-width:600px){#orderView .cart-title{gap:4px}#orderView .cart-title h2{font-size:16px;white-space:nowrap}#orderView .cart-heading-label{gap:4px}#orderView .cart-heading-label>svg{width:22px;height:22px}#orderView .cart-header-actions,#orderView .cart-title #salesHoldActions{gap:0}#orderView #salesMoreBtn{width:44px;padding:10px}#salesMoreBtn span{display:none}}
+
+.layby-workflow-actions{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}.layby-workflow-actions button{min-height:40px;font-size:13px}#laybyCancelFields{display:grid;gap:10px}#laybyCancelFields[hidden]{display:none}#laybyCancelFields label{display:grid;gap:5px}#laybyCancelFields .check-label{display:flex}#laybyPaymentReceipt{display:grid;gap:6px}

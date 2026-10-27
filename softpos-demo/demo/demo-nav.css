@@ -1,0 +1,128 @@
+/* Navigation demo. Left sidebar on desktop and tablets, full-screen "More" with back navigation on phones.
+   Colours reuse the app's own blue so the demo feels like the product. */
+.demo-badge { display: inline-block; margin-top: 2px; padding: 1px 8px; border-radius: 99px; background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 700; letter-spacing: .02em; }
+.demo-crumb { margin: 0 0 10px; padding: 0 2px; font-size: 13px; color: #475569; }
+.demo-crumb[hidden] { display: none; }
+.demo-side, .demo-more, .demo-pagebar { font-family: inherit; }
+
+@media (min-width: 601px) {
+  /* Page shell: top bar across, sidebar on the left, content on the right. */
+  #appScreen:not([hidden]) { display: grid; grid-template-columns: var(--ds-w, 248px) minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); align-items: start; }
+  #appScreen.ds-collapsed:not([hidden]) { --ds-w: 68px; }
+  #appScreen > .topbar { grid-column: 1 / -1; grid-row: 1; }
+  #appScreen > #licenseNotice { grid-column: 1 / -1; grid-row: 2; }
+  #appScreen > nav.tabs { display: none !important; }
+  #appScreen > .demo-side { grid-column: 1; grid-row: 3; position: sticky; top: var(--ds-top, 0px); height: calc(100dvh - var(--ds-top, 0px)); }
+  #appScreen > main { grid-column: 2; grid-row: 3; min-width: 0; }
+  .close-operation-view, #suiteBack { display: none !important; }
+  .demo-more, .demo-pagebar { display: none !important; }
+}
+
+.demo-side { background: #075985; color: #e0f2fe; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.ds-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 10px 8px; display: grid; gap: 2px; align-content: start; }
+.ds-item, .ds-head, .ds-collapse { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: inherit; font: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; }
+.ds-item:hover, .ds-head:hover, .ds-collapse:hover { background: rgba(255, 255, 255, .12); }
+.ds-item:focus-visible, .ds-head:focus-visible, .ds-collapse:focus-visible { outline: 2px solid #7dd3fc; outline-offset: -2px; }
+.ds-item[aria-current="page"] { background: #fff; color: #075985; font-weight: 750; }
+.ds-ico { flex: none; width: 22px; height: 22px; display: inline-grid; place-items: center; }
+.ds-ico svg { display: block; width: 22px; height: 22px; }
+.ds-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds-head { color: #bae6fd; }
+.ds-head.has-active { color: #fff; }
+.ds-head .ds-chev { margin-left: auto; flex: none; transition: transform .15s ease; }
+.ds-head[aria-expanded="false"] .ds-chev { transform: rotate(-90deg); }
+.ds-sub { display: grid; gap: 1px; margin: 0 0 8px 20px; padding-left: 10px; border-left: 1px solid rgba(255, 255, 255, .22); }
+.ds-sub .ds-item { min-height: 36px; padding: 0 10px; font-size: 13px; font-weight: 550; white-space: normal; line-height: 1.25; }
+.ds-sub .ds-label { white-space: normal; }
+.ds-collapse { flex: none; margin: 0 8px 10px; width: calc(100% - 16px); color: #bae6fd; border-top: 1px solid rgba(255, 255, 255, .16); border-radius: 0 0 8px 8px; }
+.ds-collapsed .ds-label, .ds-collapsed .ds-chev, .ds-collapsed .ds-sub { display: none; }
+.ds-collapsed .ds-item, .ds-collapsed .ds-head, .ds-collapsed .ds-collapse { justify-content: center; padding: 0; }
+@media (prefers-reduced-motion: reduce) { .ds-head .ds-chev { transition: none; } }
+
+/* Phone: More becomes its own screen. */
+@media (max-width: 600px) {
+  #demoSidebar, #demoCrumb { display: none !important; }
+  .close-operation-view, #suiteBack { display: none !important; }
+  body.demo-more-page #appScreen > .topbar { display: none; }
+  body.demo-more-open .mobile-cart-bar { display: none !important; }
+  .demo-badge { display: block; width: max-content; }
+
+  .demo-more { position: fixed; left: 0; right: 0; top: 0; bottom: calc(64px + env(safe-area-inset-bottom)); z-index: 15; background: #f1f5f9; display: flex; flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .demo-more[hidden] { display: none; }
+  .dm-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 6px; padding: calc(10px + env(safe-area-inset-top)) 12px 12px; background: #075985; color: #fff; }
+  .dm-titles { min-width: 0; }
+  .dm-head h2 { margin: 0; font-size: 20px; line-height: 1.2; font-weight: 750; color: #fff; }
+  .dm-head h2:focus { outline: none; }
+  .dm-head small { display: block; font-size: 12px; color: #bae6fd; }
+  .dm-back { flex: none; display: grid; place-items: center; width: 40px; height: 40px; margin-left: -8px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .14); color: #fff; cursor: pointer; }
+  .dm-body { display: grid; align-content: start; padding-bottom: 16px; }
+  .dm-row { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 58px; padding: 0 16px; border: 0; border-bottom: 1px solid #e2e8f0; background: #fff; color: #0f172a; font: inherit; font-size: 16px; font-weight: 600; text-align: left; cursor: pointer; }
+  .dm-row:active { background: #e0f2fe; }
+  .dm-row.is-disabled { color: #94a3b8; }
+  .dm-row .ds-ico { color: #075985; }
+  .dm-label { flex: 1; min-width: 0; }
+  .dm-label small { display: block; font-size: 12px; font-weight: 500; color: #64748b; }
+  .dm-chev { flex: none; color: #94a3b8; }
+  .dm-section { margin: 0; padding: 18px 16px 6px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #64748b; }
+
+  .demo-pagebar { position: sticky; top: 0; z-index: 14; display: flex; align-items: center; gap: 8px; min-height: 52px; padding: env(safe-area-inset-top) 12px 0 4px; background: #075985; color: #fff; }
+  .demo-pagebar[hidden] { display: none; }
+  .demo-pagebar strong { flex: 1; min-width: 0; margin-right: 44px; text-align: center; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dpb-back { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; padding: 0 10px 0 6px; border: 0; border-radius: 8px; background: transparent; color: #fff; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+  /* More: every function as a tile on one screen. */
+  .dm-search { display: block; padding: 12px 12px 0; }
+  .dm-search input { width: 100%; min-height: 44px; border: 1px solid #cbd5e1; border-radius: 12px; padding: 0 14px; font-size: 16px; background: #fff; }
+  .dm-sec { padding: 0 12px; }
+  .dm-sec[hidden], .dm-tile[hidden], .dm-empty[hidden] { display: none; }
+  .dm-sec .dm-section { padding: 16px 2px 8px; }
+  .dm-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .dm-tile { --tone-bg: #e0f2fe; --tone-fg: #075985; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; min-height: 96px; padding: 12px 6px 10px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; color: #0f172a; font: inherit; font-size: 12.5px; font-weight: 650; line-height: 1.2; text-align: center; cursor: pointer; }
+  .dm-tile:active { background: #e0f2fe; }
+  .dm-tile.is-disabled { opacity: .5; }
+  .dm-ticon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 13px; background: var(--tone-bg); color: var(--tone-fg); }
+  .dm-ticon .ds-ico, .dm-ticon .ds-ico svg { width: 24px; height: 24px; }
+  .dm-tlabel { min-width: 0; overflow-wrap: anywhere; }
+  .tone-tools { --tone-bg: #ccfbf1; --tone-fg: #0f766e; }
+  .tone-stock { --tone-bg: #fef3c7; --tone-fg: #b45309; }
+  .tone-expense { --tone-bg: #ede9fe; --tone-fg: #6d28d9; }
+  .tone-reports { --tone-bg: #dcfce7; --tone-fg: #15803d; }
+  .tone-account { --tone-bg: #e2e8f0; --tone-fg: #334155; }
+  .dm-empty { margin: 24px 16px; text-align: center; color: #64748b; }
+
+}
+
+/* Sale screen proportions: choosing products is the main job, so the products get most of the width.
+   The vendor's own rule gave the cart 44% of the screen (520 to 840 px). */
+@media (min-width: 901px) {
+  #appScreen #orderView.active-view { grid-template-columns: minmax(0, 1fr) clamp(340px, 27vw, 390px); gap: 14px; }
+  #appScreen #orderView .catalog:not(.price-keypad-active) { grid-template-columns: 138px minmax(0, 1fr); gap: 0 12px; }
+  #appScreen #orderView .catalog:not(.price-keypad-active) > .category-list { padding-right: 8px; }
+  #appScreen #orderView .catalog:not(.price-keypad-active) > .category-list .category { font-size: 14px; min-height: 54px; padding: 8px; }
+  #appScreen #orderView .product-grid:not(.list-mode) { grid-template-columns: repeat(auto-fill, minmax(164px, 1fr)); gap: 10px; }
+  #appScreen #orderView .product-grid:not(.list-mode) .product-card { min-height: 176px; }
+  #appScreen #orderView .product-card strong { font-size: 16px; line-height: 1.25; }
+  #appScreen #orderView .product-card .price { font-size: 20px; }
+  #appScreen #orderView .cart-panel { top: 84px; height: calc(100dvh - 104px); min-height: 520px; }
+  #appScreen #orderView .cart-title h2 { font-size: 19px; white-space: nowrap; }
+  /* A narrower cart cannot fit five columns, so each line becomes two rows: the name on top, then quantity, price and total. */
+  #appScreen #orderView .cart-grid-heading { display: none; }
+  #appScreen #orderView .cart-grid-row { grid-template-columns: 76px minmax(0, 1fr) auto; grid-template-areas: "product product actions" "qty price total"; gap: 4px 10px; padding: 8px 2px; }
+  #appScreen #orderView .cart-grid-product { grid-area: product; }
+  #appScreen #orderView .cart-grid-product > strong { white-space: normal; font-size: 15px; line-height: 1.25; }
+  #appScreen #orderView .cart-grid-qty { grid-area: qty; }
+  #appScreen #orderView .cart-grid-price { grid-area: price; text-align: left; }
+  #appScreen #orderView .cart-grid-total { grid-area: total; font-size: 16px; }
+  #appScreen #orderView .cart-grid-actions { grid-area: actions; }
+}
+
+/* Cashier mode: only the order screen, no sidebar. */
+@media (min-width: 601px) {
+  #appScreen.ds-cashier:not([hidden]) { grid-template-columns: minmax(0, 1fr); }
+  #appScreen.ds-cashier > .demo-side { display: none; }
+  #appScreen.ds-cashier > main { grid-column: 1; }
+}
+.demo-backsale { min-height: 40px; margin-right: 10px; padding: 0 14px; border: 0; border-radius: 10px; background: #e0f2fe; color: #075985; font-weight: 700; cursor: pointer; }
+.ds-cashier .demo-crumb:not([hidden]) { display: flex; align-items: center; }
+
+/* A dish has no stock count, so "Non-stock" on every tile is only noise. */
+#appScreen #orderView .product-card .stock.stock-service { display: none; }
