@@ -13,6 +13,7 @@
     dashboard: '<path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z"/>',
     sales: '<path d="M5 7h14l1 14H4L5 7Z"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/>',
     stock: '<path d="M3 8l9-5 9 5v8l-9 5-9-5V8Z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+    products: '<path d="M3 12V4h8l10 10-8 8L3 12Z"/><circle cx="7.5" cy="8.5" r="1.2"/>',
     quotation: '<path d="M7 3h8l4 4v14H7V3Z"/><path d="M15 3v4h4M10 12h6M10 16h6"/>',
     expense: '<path d="M4 4h16v16l-3-2-3 2-2-2-2 2-3-2-3 2V4Z"/><path d="M8 9h8M8 13h5"/>',
     reports: '<path d="M4 20V4M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/>',
@@ -46,12 +47,13 @@
     { key: 'expense', btn: 'inventorySuiteBtn', list: '#inventoryMenuDialog .sales-more-actions button' },
     { key: 'reports', btn: 'reportsMenuBtn', list: '#reportMenuDialog .sales-more-actions button' }
   ];
-  // Groups follow the jobs: sell, look after customers, keep stock, buy, report, set up.
+  // Groups follow the jobs: sell, look after customers, keep the product list, keep stock, buy, report, set up.
   var LAYOUT = [
     { key: 'home', label: ['Dashboard', '概览'], icon: 'dashboard', items: ['dashboardView'] },
     { key: 'sales', label: ['Sales', '销售'], icon: 'sales', items: ['sales:retailSalesTab', 'sales:serviceSalesTab', 'quotesView'] },
     { key: 'customers', label: ['Customers', '客户'], icon: 'wallet', items: ['sales:customerPaymentsTab', 'reports:statement', 'reports:aging'] },
-    { key: 'stock', label: ['Stock', '库存'], icon: 'stock', items: ['stock:productsView', 'stock:stockView|stockAdjust', 'stock:suite-stocktake', 'stock:suite-transfers', 'stock:suite-bulk'] },
+    { key: 'products', label: ['Products', '商品'], icon: 'products', items: ['stock:productsView'] },
+    { key: 'stock', label: ['Stock', '库存'], icon: 'stock', items: ['stock:stockView|stockAdjust', 'stock:suite-stocktake', 'stock:suite-transfers', 'stock:suite-bulk'] },
     { key: 'purchasing', label: ['Purchasing', '采购'], icon: 'cart', items: ['stock:stockView', 'expense:suite-purchases'] },
     { key: 'reports', label: ['Reports', '报表'], icon: 'reports', items: ['reports:sales', 'reports:productsales', 'reports:productshopsales', 'reports:closing', 'reports:stock'] },
     { key: 'setup', label: ['Setup', '设置'], icon: 'gear', items: ['reports:suite-pricing', 'reports:suite-integration', 'setup:system'] }
@@ -113,7 +115,7 @@
   var navigating = false;  // true while a sidebar click runs the vendor handlers
   function setActive(item) {
     activeKey = item.key;
-    crumbParts = item.group && item.type !== 'group' ? [item.group.label, item.label] : [item.label];
+    crumbParts = item.group && item.type !== 'group' && item.group.label !== item.label ? [item.group.label, item.label] : [item.label];
     if (item.key === 'sales:retailSalesTab') crumbParts = [];
     openKey = null;
   }
@@ -122,6 +124,8 @@
   // (the Invoice tab goes through the sale screen first), which must not move the highlight back.
   function go(item) {
     if (!item || item.disabled) return;
+    // Ctrl+K works from System Setting too: leave it so the page that was chosen is the one on screen.
+    if (item.key !== 'setup:system') closeAdmin();
     setActive(item);
     navigating = true;
     try { item.source.click(); } finally { navigating = false; }
@@ -367,7 +371,7 @@
       }
     });
     function sectionTitle(key) { var g = LAYOUT.filter(function (l) { return l.key === key; })[0] || OTHER; return pick(g.label); }
-    var TONES = { sales: 'sales', customers: 'expense', stock: 'stock', purchasing: 'tools', reports: 'reports', setup: 'account', other: 'account' };
+    var TONES = { sales: 'sales', customers: 'expense', products: 'stock', stock: 'stock', purchasing: 'tools', reports: 'reports', setup: 'account', other: 'account' };
     var tools = readSalesActions().map(function (a) { return { id: a.key, label: a.label, disabled: a.disabled }; });
     var account = [];
     accountRows.forEach(function (a) {

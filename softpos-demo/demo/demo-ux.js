@@ -154,7 +154,7 @@
     var out = [];
     if (!nav()) return out;
     nav().readMenu().forEach(function (x) {
-      if (x.type === 'leaf') out.push({ kind: 'Pages', label: x.label, group: x.group ? x.group.label : '', item: x });
+      if (x.type === 'leaf') out.push({ kind: 'Pages', label: x.label, group: x.group && x.group.label !== x.label ? x.group.label : '', item: x });
       else x.items.forEach(function (i) { out.push({ kind: 'Pages', label: i.label, group: x.label, item: i }); });
     });
     return out;
